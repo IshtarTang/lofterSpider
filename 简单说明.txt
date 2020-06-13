@@ -1,8 +1,9 @@
-useragentutil是个工具类，用来随机获取请求头，不要管它。
+useragentutil.py是个工具类，用来随机获取请求头，不要管它。
 
-l4_archive_finished是爬取作者主页的，能把一个作者所有的图片都爬出来保存，翻到最下面的main，按注释写然后启动就行
+l4_archive_finished.py是爬取作者主页的，能把一个作者所有的图片都爬出来保存，翻到最下面的main，按注释写然后启动就行
 
 l8_blogs.py是单篇爬取，把你要爬的单条博客放到 dir/list 里，一行一个连接，启动就行
 
-爬到的图片会在dir/img/作者名 里面，图片命名方式是 作者名[作在者lof的三级域名]-发表时间(序号)
+l4_archive_finished.py爬到的图片会在dir/img/作者名 里面，图片命名方式是 作者名[作在者lof的三级域名]-发表时间(序号)
+l8_blogs.py爬到的图在 dir/img/this 里，图片命名规则跟l4_archive_finished.py一样
 
