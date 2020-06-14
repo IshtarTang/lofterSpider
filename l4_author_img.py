@@ -222,7 +222,6 @@ def parse_blogs_info(blogs_info, parsed_blogs_info, author_name, author_ip, targ
         content = requests.get(blog_url, headers=useragentutil.get_headers()).content.decode("utf-8")
 
         blog_tags = re.findall(r'"http[s]{0,1}://.*?.lofter.com/tag/(.*?)"', content)
-        print(blog_tags)
         blog_tags = list(map(lambda x: unquote(x, "utf-8").replace("\xa0", " "), blog_tags))
 
         if target_tags:
