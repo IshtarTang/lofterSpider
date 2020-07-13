@@ -105,7 +105,7 @@ def img_fliter(imgs_url):
     fliterd_imgs_url = []
     for img_url in imgs_url:
         # 按链接格式过滤掉头像图片和推荐图片
-        if "16y16" in img_url or "amp" in img_url:
+        if "16y16" in img_url or "&amp;" in img_url:
             continue
         # 删除图片链接中的大小参数，获取时会默认最高画质
         img_url = img_url.split("imageView")[0]
@@ -180,10 +180,8 @@ def parse_archive_page(url, header, data, author_url, query_num, start_time, end
         blog_info_dic["blog_url"] = author_url + "/post/" + blog_index
 
         # 获取时间
-        # time_local = time.localtime(int(timestamp) / 1000)
         time_local = time.localtime(int(int(timestamp) / 1000))
         dt_time = time.strftime("%Y-%m-%d", time_local)
-        # public_time = time.strftime("%Y-%m-%d", time.localtime(int(int(timestamp) / 1000)))
         blog_info_dic["time"] = dt_time
 
         parsed_blog_info.append(blog_info_dic)
@@ -211,7 +209,7 @@ def parse_blogs_info(blogs_info, parsed_blogs_info, author_name, author_ip, targ
     解析完成的图片信息会写入./dir/imgs_info.json
     """
     global pre_page_last_img_info
-    imgs_info = get_file_contetn("./dir/imgs_info.json")  # 上次获取到的图片信息
+    imgs_info = get_file_contetn("./dir/author_img_file/imgs_info.json")  # 上次获取到的图片信息
     parsed_num = len(parsed_blogs_info)
 
     # 循环len(blogs_info)次，每次解析blogs_info的第一元素，解析完后删除，定时将blogs_info刷新到文件中，以保证中途失败后能继续爬取
@@ -231,9 +229,9 @@ def parse_blogs_info(blogs_info, parsed_blogs_info, author_name, author_ip, targ
                 parsed_num += 1
                 # 文件刷新
                 if (blog_num % file_update_interval == 0) or len(blogs_info) == 0:
-                    file_update("./dir/blogs_info.json", blogs_info)
-                    file_update("./dir/imgs_info.json", imgs_info)
-                    file_update("./dir/blogs_info_parsed.json", parsed_blogs_info)
+                    file_update("./dir/author_img_file/blogs_info.json", blogs_info)
+                    file_update("./dir/author_img_file/imgs_info.json", imgs_info)
+                    file_update("./dir/author_img_file/blogs_info_parsed.json", parsed_blogs_info)
                     print("文件刷新")
                     time.sleep(random.randint(1, 2))
                 continue
@@ -248,6 +246,7 @@ def parse_blogs_info(blogs_info, parsed_blogs_info, author_name, author_ip, targ
             img_index = pre_page_last_img_info["index"]
 
         # 过滤博客页面中获取到的图片链接
+        # print("\n{}".format(imgs_url))
         imgs_url = img_fliter(imgs_url)
 
         # 整理图片信息，用于下一步保存
@@ -289,17 +288,19 @@ def parse_blogs_info(blogs_info, parsed_blogs_info, author_name, author_ip, targ
         del blogs_info[0]
         print("解析完成，获取到图片链接%d，总获取图片数%d，已解析完成%d个链接（本次运行中已解析%d个链接），剩余%d" % (
             count, len(imgs_info), parsed_num, blog_num + 1, len(blogs_info)))
+
         # print(imgs_url)
+        # print("--------"*10)
 
         # 按文件数目为间隔，将未解析博客、解析出的图片信息、已解析的博客 刷新到文件中
         if (blog_num % file_update_interval == 0 and not next_some_time) or len(blogs_info) == 0:
-            file_update("./dir/blogs_info.json", blogs_info)
-            file_update("./dir/imgs_info.json", imgs_info)
-            file_update("./dir/blogs_info_parsed.json", parsed_blogs_info)
+            file_update("./dir/author_img_file/blogs_info.json", blogs_info)
+            file_update("./dir/author_img_file/imgs_info.json", imgs_info)
+            file_update("./dir/author_img_file/blogs_info_parsed.json", parsed_blogs_info)
             print("文件刷新")
             time.sleep(random.randint(1, 2))
 
-    with open("./dir/blogs_info.json", "w") as op:
+    with open("./dir/author_img_file/blogs_info.json", "w") as op:
         op.write("finished")
 
 
@@ -333,21 +334,21 @@ def download_img(imgs_info, imgs_info_saved, author_name, author_ip, file_update
         print("图片已保存，共保存图片%d (本次运行已保存%d)，余%d" % (save_num, img_index + 1, len(imgs_info)))
 
         if img_index % file_update_interval == 0 or len(imgs_info) == 0:
-            file_update("./dir/imgs_info.json", imgs_info)
-            file_update("./dir/imgs_info_saved.json", imgs_info_saved)
+            file_update("./dir/author_img_file/imgs_info.json", imgs_info)
+            file_update("./dir/author_img_file/imgs_info_saved.json", imgs_info_saved)
             time.sleep(1)
             print("文件刷新")
-    with open("./dir/imgs_info.json", "w")as op:
+    with open("./dir/author_img_file/imgs_info.json", "w")as op:
         op.write("finished")
 
 
 # 运行时需要文件创建和删除
 def deal_file(action):
-    dir_path = "./dir"
-    blog_info_file = "./dir/blogs_info.json"
-    img_info_file = "./dir/imgs_info.json"
-    blogs_info_parsed_file = "./dir/blogs_info_parsed.json"
-    img_info_file_saved = "./dir/imgs_info_saved.json"
+    dir_path = "./dir/author_img_file"
+    blog_info_file = dir_path + "/blogs_info.json"
+    img_info_file = dir_path + "/imgs_info.json"
+    blogs_info_parsed_file = dir_path + "/blogs_info_parsed.json"
+    img_info_file_saved = dir_path + "/imgs_info_saved.json"
 
     if action == "init":
         print("检查运行所需的文件")
@@ -391,13 +392,13 @@ def run(author_url, start_time, end_time, target_tags, tags_filter_mode, file_up
     print("作者名%s,lofterip%s,主页链接 %s" % (author_name, author_ip, author_url))
 
     deal_file("init")
-
+    dir_path = "./dir/author_img_file"
     # 判断博客解析进度
-    if is_file_in("./dir/blogs_info.json") == "finished":
+    if is_file_in(dir_path + "/blogs_info.json") == "finished":
         print("所有博客已解析完毕，跳转至图片下载")
-    elif is_file_in("./dir/blogs_info.json"):
-        blogs_info = get_file_contetn("./dir/blogs_info.json")
-        parsed_blogs_info = get_file_contetn("./dir/blogs_info_parsed.json")
+    elif is_file_in(dir_path + "/blogs_info.json"):
+        blogs_info = get_file_contetn(dir_path + "/blogs_info.json")
+        parsed_blogs_info = get_file_contetn(dir_path + "/blogs_info_parsed.json")
         print("读取到上次运行保存的博客信息：未解析博链接%d条，已解析链接%d条，接上次继续运行" % (len(blogs_info), len(parsed_blogs_info)))
         parse_blogs_info(blogs_info, parsed_blogs_info, author_name, author_ip, target_tags, tags_filter_mode,
                          file_update_interval)
@@ -405,18 +406,18 @@ def run(author_url, start_time, end_time, target_tags, tags_filter_mode, file_up
         print("开始获取归档页面数据，链接 %s (不能直接点开)" % archive_url)
         blog_infos = parse_archive_page(url=archive_url, data=data, header=head, author_url=author_url,
                                         query_num=query_num, start_time=start_time, end_time=end_time)
-        parsed_blogs_info = get_file_contetn("./dir/blogs_info_parsed.json")
-        file_update("./dir/blogs_info.json", blog_infos)
+        parsed_blogs_info = get_file_contetn(dir_path + "/blogs_info_parsed.json")
+        file_update(dir_path + "/blogs_info.json", blog_infos)
         print("归档页面数据保存完毕,开始解析博客页面")
         parse_blogs_info(blog_infos, parsed_blogs_info, author_name, author_ip, target_tags, tags_filter_mode,
                          file_update_interval)
         print("博客解析完毕，开始图片下载")
     # 判断图片保存进度
-    if is_file_in("./dir/imgs_info.json") == "finished":
+    if is_file_in(dir_path + "/imgs_info.json") == "finished":
         print("该作者首页的所有图片已保存完毕，无需操作")
     else:
-        imgs_info = get_file_contetn("./dir/imgs_info.json")
-        imgs_info_saved = get_file_contetn("./dir/imgs_info_saved.json")
+        imgs_info = get_file_contetn(dir_path + "/imgs_info.json")
+        imgs_info_saved = get_file_contetn(dir_path + "/imgs_info_saved.json")
         download_img(imgs_info, imgs_info_saved, author_name, author_ip, file_update_interval)
         print("所有图片保存完毕")
 
@@ -425,17 +426,23 @@ def run(author_url, start_time, end_time, target_tags, tags_filter_mode, file_up
 
 
 if __name__ == "__main__":
-    # 作者的主页地址   示例 https://tang0396.lofter.com/   *最后的'/'不能少
-    author_url = "https://tang0396.lofter.com/"
+    # 一个会出bug的主页 https://silhouette-of-wolf.lofter.com/
+    # 作者在头像下放了tag，导致tag过滤失效，所有的内容都会被保存
+
+    # 作者的主页地址   示例 https://ishtartang.lofter.com/   *最后的'/'不能少
+    author_url = "https://biaay002.lofter.com/"
 
     # ### 自定义部分 ### #
+
     # 设定爬取哪个时间段的博客，空值为不设定 格式："yyyy-MM-dd"
     start_time = ""
     end_time = ""
     # 指定保留有哪些tag的博客，空值为不过滤
-    target_tags = ["刺客信条", "edward kenway"]
+    target_tags = ["虐杀原形", "刺客信条", "看门狗", "看门狗2"]
     # tag过滤模式，为in时会保留没有任何tag的博客，为out时不保留
     tags_filter_mode = "out"
+
     # 间隔多久把数据刷新到文件中一次
     file_update_interval = 10
+
     run(author_url, start_time, end_time, target_tags, tags_filter_mode, file_update_interval)

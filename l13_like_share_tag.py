@@ -299,7 +299,7 @@ def save_all_fav(url, mode, file_path, login_info, start_time):
             data = update_data(mode, data, get_num, got_num)
         print()
     if len(fav_info) == 0:
-        print("信息获取异常，请检查模式与链接是否匹配，like2请检查登录信息是否有误")
+        print("信息获取异常，请检查网络是否正常，模式与链接是否匹配，like2请检查登录信息是否有误，")
         exit()
     file = open(file_path + "/blogs_info", "w", encoding="utf-8")
     for info in fav_info:
@@ -891,7 +891,14 @@ def run(url, mode, save_mode, classify_by_tag, prior_tags, agg_non_prior_tag, lo
 
     # 阶段1，信息获取和整理 format_fav_info.json存在为这一阶段结束的标志
     step1_start_time = time.time()
-    print("阶段1：喜欢页面信息获取与信息整理")
+    str1 = ""
+    if mode == "like1" or mode == "like2":
+        str1 = "喜欢"
+    elif mode == "share":
+        str1 = "推荐"
+    elif mode == "tag":
+        str1 = "tag"
+    print("阶段1：{}页面信息获取与信息整理".format(str1))
     if not os.path.exists(file_path + "/format_blogs_info.json"):
         save_all_fav(url, mode, file_path, login_info, start_time)
         fav_str = open(file_path + "/blogs_info", "r", encoding="utf-8").read()
@@ -1043,7 +1050,7 @@ def run(url, mode, save_mode, classify_by_tag, prior_tags, agg_non_prior_tag, lo
 
 if __name__ == '__main__':
     # 基础设置  -------------------------------------------------------- #
-    url = "http://www.lofter.com/tag/%E4%BD%9B%E7%BD%97%E4%BC%A6%E8%90%A8/total"
+    url = "http://www.lofter.com/tag/%E5%88%BA%E5%AE%A2%E4%BF%A1%E6%9D%A1/total"
     # url = "https://ishtartang.lofter.com/"
     # 运行模式
     mode = "tag"
@@ -1057,18 +1064,17 @@ if __name__ == '__main__':
     classify_by_tag = 1
 
     # 优先tag:该项不为空时为启动该功能，未启动按tag分类时该功能无效
-
-    prior_tags = ['海尔森肯威', 'jacob', 'bayek', 'acea', 'eivor', '插画', 'haytham kenway']
+    prior_tags = ["edward kenway",'海尔森肯威', 'jacob','haytham kenway']
     # 非优先tag聚合：
     agg_non_prior_tag = 0
 
     # like2模式设置   --------------------------------------------------- #
     # 手机号
-    phone_number = "189********"
+    phone_number = "1897*****"
     # 密码
-    password = "5*****"
+    password = "54*****"
     # 登录授权码
-    login_auth = "DPbMaZp33-2I5Gpo9gA9PpXfTD5hJiFX3l25A-tGGO0kyrrpURLY-LC9pPHVyO4Np00KVQROF4Ud%0AN479hfDhBqYZz*****_"
+    login_auth = "DPbMaZp33-2I5Gpo9gA9PpXfTD5hJiFX3l25A-tGGO0kyrrpURLY-LC9pPHVyO4Np00KVQROF4Ud%0AN479hfDhBqYZzuhKbfl_"
 
     # 最早时间指定 格式：2019-10-1
     start_time = "2020-6-30"

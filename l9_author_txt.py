@@ -132,8 +132,11 @@ def save_file(blog_infos, author_name, author_ip):
     template_id = parse_template.matcher(first_parse, first_title)
     print("文字匹配模板为模板{}".format(template_id))
     if template_id == 0:
-        print("文字匹配模板是根据作者主页自动匹配的，模板0为通用匹配模板，除了文章主体之外可能会爬到一些其他的内容，也有可能出现文章部分内容缺失")
-
+        print("文字匹配模板是根据作者主页自动匹配的，模板0是一个匹配度比较广的模板，使用模板0说明没有其他的模板匹配成功，除了文章主体之外可能会爬到一些其他的内容，也有可能出现文章部分内容缺失")
+        str = input("输入ok确定继续爬取，或输入任意其他文字退出\n")
+        if not str == "ok":
+            print("退出")
+            exit()
     arthicle_path = "./dir/article/{}".format(author_name)
 
     for blog_info in blog_infos:
@@ -144,9 +147,8 @@ def save_file(blog_infos, author_name, author_ip):
         file_name = "{} by {}".format(title, author_name)
         article_head = "{} by {}[{}]\n发表时间：{}\n原文链接： {}".format(title, author_name, author_ip, public_time, url)
         parse = get_parse(url)
-        article_content = parse_template.get_content(parse, template_id, title) \
-            .replace("                            ", "")
-        article = article_head + "\n" + article_content
+        article_content = parse_template.get_content(parse, template_id, title)
+        article = article_head + "\n\n\n\n" + article_content
         with open(arthicle_path + "/" + file_name + ".txt", "w", encoding="utf-8") as op:
             op.write(article)
         print("{} by {} 保存完毕".format(title, author_name))
@@ -161,7 +163,10 @@ def save_chapter(article_infos, target_titles, author_name, author_ip):
     template_id = parse_template.matcher(test_parse, test_title)
     print("文字匹配模板为模板{}".format(template_id))
     if template_id == 0:
-        print("文字匹配模板是根据作者主页自动匹配的，模板0为通用匹配模板，除了文章主体之外可能会爬到一些其他的内容，也有可能出现文章部分内容缺失")
+        print("文字匹配模板是根据作者主页自动匹配的，模板0是一个匹配度比较广的模板，使用模板0说明没有其他的模板匹配成功，除了文章主体之外可能会爬到一些其他的内容，也有可能出现文章部分内容缺失")
+        str = input("输入ok确定继续爬取，或输入任意其他文字退出\n")
+        if not str == "ok":
+            exit()
 
     for target_title in target_titles:
         chapters_info = article_infos[target_title]
@@ -222,7 +227,7 @@ def run(author_url, start_time, end_time, target_titles, merger_chapter):
 
 if __name__ == '__main__':
     # 作者的主页地址   示例 https://tang0396.lofter.com/   *最后的'/'不能少
-    author_url = "https://zhj1006.lofter.com/"
+    author_url = "http://canggoucelia.lofter.com/"
 
     # ### 自定义部分 ### #
 
@@ -231,7 +236,9 @@ if __name__ == '__main__':
     end_time = ""
 
     # 文章标题指定：只爬取标题标题包含指定内容的文章，适用于爬取系列文或多章节文章，空值为不指定。
-    target_titles = ["山谷情人", "渎神"]
+    # target_titles = ["山谷情人","玫瑰交易"]
+    target_titles = []
+
     # 章节合并：指定文章标题时该功能生效，开启后爬取多章节文章时会按标题自动合并文章。0为关闭，1为启动。
     # 注意，如果开启章节合并，文件名会使用你在标题指定中写的名称
     merger_chapter = 1

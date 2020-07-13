@@ -75,7 +75,8 @@ def parse_blogs_info(blogs_urls):
 
         # 过滤博客页面中获取到的图片链接
         imgs_url = l4_author_img.img_fliter(imgs_url)
-        
+        print(imgs_url)
+
         # 整理图片信息，用于下一步保存
         for img_url in imgs_url:
             img_index += 1
