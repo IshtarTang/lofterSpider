@@ -445,7 +445,7 @@ def infor_formater(fav_infos, fav_str, mode, file_path, start_time, min_hot, pri
             l_url = list(map(lambda x: x.replace("\\", "").replace('"', ''), l_url))
             l_img = parse.xpath("//img/@src")
             l_img = list(map(lambda x: x.replace("\\", "").replace('"', ''), l_img))
-            l_content = c = re.sub('<[^<]+?>', '', long_article1).replace(".&nbsp;", " ").strip()
+            l_content = c = re.sub('<[^<]+?>', '', long_article1).replace("&nbsp;", " ").strip()
             l_content = l_content.encode('latin-1').decode("unicode_escape", errors="ignore").strip()
 
         blog_info["long article content"] = l_content
@@ -733,9 +733,17 @@ def save_long_article(long_articles_info, file_path, save_img_in_text):
         if save_img_in_text:
             if l_info["long article img"]:
                 for img_url in l_info["long article img"]:
+                    re_url = re.findall('http[s]{0,1}://imglf\d{0,1}.nosdn\d*.[0-9]{0,3}.net.*', img_url)
+                    if not re_url:
+                        print("\n图片 {} 不是lofter站内图 可能会保存失败".format(img_url), end="\t")
+                    try:
+                        img = requests.get(img_url, headers=useragentutil.get_headers()).content
+                    except:
+                        print("保存失败，请尝试手动保存")
+                        continue
+
                     img_name = l_info["title in filename" \
                                       ""] + " by " + l_info["author name in filename"] + ".jpg"
-                    img = requests.get(img_url, headers=useragentutil.get_headers()).content
                     img_name = filename_check(img_name, img, file_path + "/long article", "jpg")
                     write_img(img, img_name, file_path + "/long article")
 
@@ -771,19 +779,21 @@ def save_img(imgs_info, file_path, img_save_info, classify_by_tag, prior_tags, a
                 img_type = "png"
             else:
                 img_type = "jpg"
+
+            if print_level:
+                print("正在保存图片 {} ".format(img_url), end="\t\t")
+            # 检查图片是否是站内图
             re_url = re.findall('http[s]{0,1}://imglf\d{0,1}.nosdn\d*.[0-9]{0,3}.net.*', img_url)
             if not re_url:
                 print("\n图片 {} 不是lofter站内图 ".format(img_url), end="\t")
             try:
                 img = requests.get(img_url, headers=useragentutil.get_headers()).content
+                print("保存成功")
             except:
                 print("保存失败，请尝试手动保存")
                 continue
             filename = img_info["author name in filename"] + "[" + img_info["author ip"] + "] " + img_info[
                 "public time"] + "." + img_type
-
-            if print_level:
-                print("正在保存图片 {} ".format(img_url), end="\t\t")
 
             # 根据自动整理选项选择保存路径
 
@@ -924,11 +934,9 @@ def run(url, mode, save_mode, classify_by_tag, prior_tags, agg_non_prior_tag, lo
     print("{} {} 篇".format("共计", len(blogs_info)))
 
     tag_count = {}
-    tag_count_print = lambda x: ["img", "article", "text", "long article"] if x == 1 else ["img", "article"]
-    for type1 in tag_count_print(print_level):
+    for type1 in classified_blogs:
         tag_count[type1] = count_tag(classified_blogs[type1])
     tag_count["all"] = count_tag(blogs_info)
-    print("\n" + "=====================" * 20 + "\ntag 统计：\n" + "-----------------------" * 100)
     filt_tag_count = {}
     for type1 in tag_count:
         filt_dic = {}
@@ -936,6 +944,8 @@ def run(url, mode, save_mode, classify_by_tag, prior_tags, agg_non_prior_tag, lo
             if tag_count[type1][tag] > tag_filt_num:
                 filt_dic[tag] = tag_count[type1][tag]
         filt_tag_count[type1] = filt_dic
+
+    print("\n" + "=====================" * 20 + "\ntag 统计：\n" + "-----------------------" * 100)
     for type1 in tag_count:
         print("{}共计tag {} 个，出现次数超过 {} 的tag {} 个".format(types_str[type1], len(tag_count[type1]), tag_filt_num,
                                                         len(filt_tag_count[type1])))
@@ -949,8 +959,6 @@ def run(url, mode, save_mode, classify_by_tag, prior_tags, agg_non_prior_tag, lo
             op.write("\n".join(tag_count["all"].keys()))
         print()
 
-    if not print_level:
-        print("文本博客与长文章tag信息已省略，如要显示请把print_level调为1")
     print("======================" * 10)
     is_on = lambda x: "启动" if x else "未启动"
     print("\n自动整理选项：\n按tag整理至同文件夹内\t{}\n指定优先tag\t{}\n非优先tag聚合\t{}".format(is_on(classify_by_tag), is_on(prior_tags),
@@ -1035,14 +1043,14 @@ def run(url, mode, save_mode, classify_by_tag, prior_tags, agg_non_prior_tag, lo
 
 if __name__ == '__main__':
     # 基础设置  -------------------------------------------------------- #
-    url = "http://www.lofter.com/tag/%E5%88%BA%E5%AE%A2%E4%BF%A1%E6%9D%A1/total"
+    url = "http://www.lofter.com/tag/%E4%BD%9B%E7%BD%97%E4%BC%A6%E8%90%A8/total"
     # url = "https://ishtartang.lofter.com/"
     # 运行模式
     mode = "tag"
 
     # 保存哪些内容，1为开启，0为关闭
     # article-文章  text-文本   long article-长文章     img-保存图片
-    save_mode = {"article": 1, "text": 1, "long article": 0, "img": 1}
+    save_mode = {"article": 0, "text": 0, "long article": 1, "img": 0}
 
     # 自动整理设置    --------------------------------------------------- #
     # 按tag分类：0关闭 1启动
@@ -1079,7 +1087,7 @@ if __name__ == '__main__':
     start_time = "2020-6-30"
 
     # tag模式的最低热度限制  --------------------------------------------- #
-    min_hot = 10
+    min_hot = 0
 
     # 其他设置  --------------------------------------------------------- #
 
