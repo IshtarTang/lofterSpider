@@ -1057,31 +1057,18 @@ if __name__ == '__main__':
     classify_by_tag = 1
 
     # 优先tag:该项不为空时为启动该功能，未启动按tag分类时该功能无效
-    prior_tags = ['社会学', '纯贱', '刺客信条乙女向', '乙女', 'ezio/altair', 'haytham/connor', '现代组', '找船组', 'haytham/edward', '海鲜组',
-                  'hc', 'shaytham', '航海组', '茄面', '', 'ea', 'alte', 'ad钙奶好', 'ggpg', '暴卡', '垃圾上司组', 'adgg',
-                  'ineffable husbands', '油炸玫瑰', 'ma', '油炸法棍', 'ae', 's17s', 'ad钙奶', 'aziraphale/crowley', 'ggad', '格邓',
-                  '', '', '', '', '阿泰尔', 'altair', 'altaïr', '马利克', 'malik', 'yusuf', 'ezio', '艾吉奥', 'kenway', '肯威',
-                  'edward kenway', '爱德华肯威', 'edward', 'connor', 'connor kenway', '康纳', '康纳肯威', 'ziio', '卡涅齐欧', '海尔森',
-                  'haytham', 'haytham kenway', '海尔森肯威', '肯威父子', 'shay', '谢伊', 'shay cormac', '鳕鱼', 'leonardo', '大番茄',
-                  'desmond', '戴斯蒙', 'eivor', '邵云', '达芬奇', '弗莱双子', '雅各布', 'evie', '雅各布弗莱', 'jacob', 'evie frye',
-                  'jacob frye', '油炸姐弟', 'elise', '亚诺', 'arno', '亚诺多里安', 'crowley', 'aziraphale', '中国boy', '阴阳怪气',
-                  'david tennant', 'venom', 'percival graves', '阴阳怪气男团', '杰克船长', 'gellert grindelwald', 'jack sparrow',
-                  'johnny depp', '约翰尼德普', '约翰尼·德普', '德普', '加百列', 'theseus', '刺客信条黑旗', 'ac3', '刺客信条3',
-                  "assassin's creed3", '刺客信条叛变', 'acs', 'acr', 'acu', '刺客信条枭雄', '刺客信条大革命', '刺客信条启示录', '刺客信条英灵殿',
-                  '刺客信条：叛变', '刺客信条奥德赛', "assassin's creed", '刺客信條', '刺客信条', '虐杀原型', '好兆头', '好兆頭', 'good omens',
-                  '神奇动物在哪里', 'goodomens', '哈利波特', '看门狗', '加勒比海盗', '虐杀原形', '流浪地球', '三体', '彩虹六号', 'watch dogs', '恋与制作人',
-                  ]
+
     prior_tags = ['海尔森肯威', 'jacob', 'bayek', 'acea', 'eivor', '插画', 'haytham kenway']
     # 非优先tag聚合：
     agg_non_prior_tag = 0
 
     # like2模式设置   --------------------------------------------------- #
     # 手机号
-    phone_number = "18975585675"
+    phone_number = "189********"
     # 密码
-    password = "548586"
+    password = "5*****"
     # 登录授权码
-    login_auth = "DPbMaZp33-2I5Gpo9gA9PpXfTD5hJiFX3l25A-tGGO0kyrrpURLY-LC9pPHVyO4Np00KVQROF4Ud%0AN479hfDhBqYZzuhKbfl_"
+    login_auth = "DPbMaZp33-2I5Gpo9gA9PpXfTD5hJiFX3l25A-tGGO0kyrrpURLY-LC9pPHVyO4Np00KVQROF4Ud%0AN479hfDhBqYZz*****_"
 
     # 最早时间指定 格式：2019-10-1
     start_time = "2020-6-30"
