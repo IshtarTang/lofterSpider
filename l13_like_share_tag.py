@@ -651,7 +651,10 @@ def save_article(articles_info, file_path, classify_by_tag, prior_tags, agg_non_
                     if print_level:
                         print("准备保存文章中的图片 {}", end="\t\t")
                     img_name = filename_title + " by " + article_info["author name in filename"] + ".jpg"
-                    img = requests.get(img_url, headers=useragentutil.get_headers()).content
+    
+    
+    
+    
                     filename = filename_check(filename, img, file_path, "jpg")
                     write_img(img, img_name, article_path)
                     if print_level:
@@ -788,7 +791,6 @@ def save_img(imgs_info, file_path, img_save_info, classify_by_tag, prior_tags, a
                 print("\n图片 {} 不是lofter站内图 ".format(img_url), end="\t")
             try:
                 img = requests.get(img_url, headers=useragentutil.get_headers()).content
-                print("保存成功")
             except:
                 print("保存失败，请尝试手动保存")
                 continue
