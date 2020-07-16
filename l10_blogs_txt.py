@@ -101,4 +101,4 @@ if __name__ == '__main__':
     with open("./dir/txt_list") as op:
         blog_urls = op.readlines()
     blog_urls = list(map(lambda x: x.replace("\n", ""), blog_urls))
-    archives_info = save_files(blog_urls) 
+    archives_info = save_files(blog_urls)
