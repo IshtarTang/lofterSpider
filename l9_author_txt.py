@@ -27,7 +27,7 @@ def title_filter(title, target_titles):
 def chapter_format(target_titles, blogs_info):
     chapter_infos = {}
     # 以title为key的字典，值为该标题下章节的信息
-    for target_title in target_titles:
+    for target_title in target_titles: 
         chapter_infos[target_title] = []
     # 加入信息
     for blog_info in blogs_info:
