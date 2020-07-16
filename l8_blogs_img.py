@@ -29,7 +29,7 @@ def get_time(blog_url, author_page_parse):
             if blog_id in blog_info:
                 the_blog_info = blog_info
                 flag = True
-                break
+                break 
         if flag:
             break
         # # 当返回的博客数不等于请求参数中的query_num时说明已经获取到所有的博客信息，跳出循环
