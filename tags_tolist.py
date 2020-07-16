@@ -9,5 +9,5 @@ if __name__ == '__main__':
     for a in f_list:
         k = a.replace("\u3000"," ")
         a_list.append(a)
-    print(len(a_list))
+    print(len(a_list)) 
     print(a_list)
