@@ -27,7 +27,7 @@ def title_filter(title, target_titles):
 def chapter_format(target_titles, blogs_info):
     chapter_infos = {}
     # 以title为key的字典，值为该标题下章节的信息
-    for target_title in target_titles: 
+    for target_title in target_titles:
         chapter_infos[target_title] = []
     # 加入信息
     for blog_info in blogs_info:
@@ -149,6 +149,7 @@ def save_file(blog_infos, author_name, author_ip):
         parse = get_parse(url)
         article_content = parse_template.get_content(parse, template_id, title)
         article = article_head + "\n\n\n\n" + article_content
+        file_name = file_name.replace("/","-")
         with open(arthicle_path + "/" + file_name + ".txt", "w", encoding="utf-8") as op:
             op.write(article)
         print("{} by {} 保存完毕".format(title, author_name))
@@ -184,7 +185,7 @@ def save_chapter(article_infos, target_titles, author_name, author_ip):
             article_content += chapter_content
             print("保存进度{}/{}".format(num, len(chapters_info)))
             num += 1
-
+        file_name = file_name.replace("/","-")
         with open(arthicle_path + "/" + file_name + ".txt", "w", encoding="utf-8") as op:
             op.write(article_content)
         print("{} 保存完成\n".format(target_title))
