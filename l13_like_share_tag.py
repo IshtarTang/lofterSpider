@@ -318,7 +318,11 @@ def infor_formater(fav_infos, fav_str, mode, file_path, start_time, min_hot, pri
         blog_info = {}
 
         # 博客链接
-        url = re.search('s\d{1,5}.blogPageUrl="(.*?)"', x).group(1)
+        try:
+            url = re.search('s\d{1,5}.blogPageUrl="(.*?)"', x).group(1)
+        except:
+            print("博客{} 信息丢失，跳过".format(fav_infos.index(x) + 1))
+            continue
         blog_info["url"] = url
         if print_level:
             print("博客{} {}准备解析".format(fav_infos.index(x) + 1, url), end="\t")
@@ -364,7 +368,7 @@ def infor_formater(fav_infos, fav_str, mode, file_path, start_time, min_hot, pri
         public_time = time.strftime("%Y-%m-%d", time_local1)
         blog_info["public time"] = public_time
         # tags
-        tags = re.search('s\d{1,5}.tag[s]{0,1}="(.*?)"', x).group(1).encode('utf-8').decode('unicode_escape').split(
+        tags = re.search('s\d{1,5}.tag[s]{0,1}="(.*?)";', x).group(1).encode('utf-8').decode('unicode_escape').split(
             ",")
         if tags[0] == "":
             tags = []
