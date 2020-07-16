@@ -188,7 +188,7 @@ def parse_archive_page(url, header, data, author_url, query_num, start_time, end
 
     print("归档页面解析完毕，共获取博客链接数%d，带图片博客数%d" % (blog_num, len(parsed_blog_info)))
     return parsed_blog_info
-
+ 
 
 # 用来判断两条博客发布时间是否相同的
 pre_page_last_img_info = {"last_file_time": '', "index": ''}
