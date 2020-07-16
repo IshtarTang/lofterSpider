@@ -31,7 +31,7 @@ def write_text(file, filename, path):
         op.write(file)
 
 
-# 保存图片
+# 保存图片 
 def write_img(file, filename, path):
     with open(path + "/" + filename, "wb") as op:
         op.write(file)
