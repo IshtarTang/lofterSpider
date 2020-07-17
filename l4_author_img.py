@@ -188,7 +188,7 @@ def parse_archive_page(url, header, data, author_url, query_num, start_time, end
 
     print("归档页面解析完毕，共获取博客链接数%d，带图片博客数%d" % (blog_num, len(parsed_blog_info)))
     return parsed_blog_info
- 
+
 
 # 用来判断两条博客发布时间是否相同的
 pre_page_last_img_info = {"last_file_time": '', "index": ''}
@@ -313,13 +313,16 @@ def download_img(imgs_info, imgs_info_saved, author_name, author_ip, file_update
     :param author_ip 作者的lofter三级域名
     :return:无
     """
-
-    dir_path = "./dir/img/" + author_name + "[" + author_ip + "]"
+    author_name_in_filename = author_name.replace("/", "&").replace("|", "&").replace("\\", "&"). \
+        replace("<", "《").replace(">", "》").replace(":", "：").replace('"', '”').replace("?", "？"). \
+        replace("*", "·").replace("\n", "").replace("(", "（").replace(")", "）")
+    dir_path = "./dir/img/" + author_name_in_filename + "[" + author_ip + "]"
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
     save_num = len(imgs_info_saved)
     for img_index in range(len(imgs_info)):
         pic_name = imgs_info[0]["pic_name"]
+
         pic_url = imgs_info[0]["img_url"]
         img_path = dir_path + "/" + pic_name
         print("获取图片 %s" % (pic_url))
@@ -389,7 +392,7 @@ def run(author_url, start_time, end_time, target_tags, tags_filter_mode, file_up
     data = make_data(author_id, query_num)
     head = make_head(author_url)
 
-    print("作者名%s,lofterip%s,主页链接 %s" % (author_name, author_ip, author_url))
+    print("作者名%s,lofter ip %s,主页链接 %s" % (author_name, author_ip, author_url))
 
     deal_file("init")
     dir_path = "./dir/author_img_file"
