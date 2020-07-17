@@ -29,7 +29,7 @@ def get_time(blog_url, author_page_parse):
             if blog_id in blog_info:
                 the_blog_info = blog_info
                 flag = True
-                break 
+                break
         if flag:
             break
         # # 当返回的博客数不等于请求参数中的query_num时说明已经获取到所有的博客信息，跳出循环
@@ -91,9 +91,14 @@ def parse_blogs_info(blogs_urls):
                 img_type = "jpg"
             img_info = {}
             img_info["img_url"] = img_url
-            img_info["pic_name"] = author_name + "[" + author_ip + "] " + public_time + "(" + str(
+            author_name_in_filename = author_name.replace("/", "&").replace("|", "&").replace("\\", "&"). \
+                replace("<", "《").replace(">", "》").replace(":", "：").replace('"', '”').replace("?", "？"). \
+                replace("*", "·").replace("\n", "").replace("(", "（").replace(")", "）")
+            img_info["pic_name"] = author_name_in_filename + "[" + author_ip + "] " + public_time + "(" + str(
                 img_index) + ")." + img_type
             imgs_info.append(img_info)
+            # 这里想遇到png的时候存一张png格式，一张jpg格式。png格式有透明图层有的要在jpg格式下才能看全
+            # 但总之效果不好所以弃用
             # if img_type == "png":
             #     img_info_2={}
             #     img_info_2["img_url"] = img_url
