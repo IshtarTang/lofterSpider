@@ -79,6 +79,10 @@ def save_files(blogs_urls):
         title = time_and_title[1]
         article_head = "{} by {}[{}]\n发表时间：{}".format(title, author_name, author_ip, time_and_title[0])+"\n"+"原文链接： "+blog_url
         file_name = title + " by " + author_name + ".txt"
+        file_name = file_name.replace("/", "&").replace("|", "&").replace("\\", "&").replace("<", "《") \
+            .replace(">", "》").replace(":", "：").replace('"', '”').replace("?", "？").replace("*", "·"). \
+            replace("\n", "").replace("(", "（").replace(
+            ")", "）")
         print("准备保存：{} by {}，原文连接： {} ".format(title, author_name, blog_url))
         template_id = parse_template.matcher(parse, title)
         print("文字匹配模板为模板{}".format(template_id))
