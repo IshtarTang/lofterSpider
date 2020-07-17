@@ -27,7 +27,7 @@ def title_filter(title, target_titles):
 def chapter_format(target_titles, blogs_info):
     chapter_infos = {}
     # 以title为key的字典，值为该标题下章节的信息
-    for target_title in target_titles: 
+    for target_title in target_titles:
         chapter_infos[target_title] = []
     # 加入信息
     for blog_info in blogs_info:
@@ -145,6 +145,10 @@ def save_file(blog_infos, author_name, author_ip):
         url = blog_info["url"]
         print("准备保存：{} by {}，原文连接： {} ".format(title, author_name, url), end="    ")
         file_name = "{} by {}".format(title, author_name)
+        file_name = file_name.replace("/", "&").replace("|", "&").replace("\\", "&").replace("<", "《") \
+            .replace(">", "》").replace(":", "：").replace('"', '”').replace("?", "？").replace("*", "·"). \
+            replace("\n", "").replace("(", "（").replace(
+            ")", "）")
         article_head = "{} by {}[{}]\n发表时间：{}\n原文链接： {}".format(title, author_name, author_ip, public_time, url)
         parse = get_parse(url)
         article_content = parse_template.get_content(parse, template_id, title)
@@ -172,6 +176,10 @@ def save_chapter(article_infos, target_titles, author_name, author_ip):
         chapters_info = article_infos[target_title]
         print("开始保存 {}，第一章节链接 {}".format(target_title, chapters_info[0]["url"]))
         file_name = target_title + " by " + author_name
+        file_name = file_name.replace("/", "&").replace("|", "&").replace("\\", "&").replace("<", "《") \
+            .replace(">", "》").replace(":", "：").replace('"', '”').replace("?", "？").replace("*", "·"). \
+            replace("\n", "").replace("(", "（").replace(
+            ")", "）")
         article_head = file_name + "[" + author_ip + "]\n第一章节发表时间：{}".format(
             chapters_info[0]["time"]) + "\n最后章节发表时间：{}".format(chapters_info[-1]["time"]) + "\n\n"
         article_content = article_head
@@ -207,15 +215,18 @@ def run(author_url, start_time, end_time, target_titles, merger_chapter):
     data = l4_author_img.make_data(author_id, query_num)
     head = l4_author_img.make_head(author_url)
 
-    print("作者名%s,lofterip%s,主页链接 %s" % (author_name, author_ip, author_url))
+    print("作者名%s,lofter ip %s,主页链接 %s" % (author_name, author_ip, author_url))
     path = "./dir/article"
     arthicle_path = "./dir/article/{}".format(author_name)
-    for x in [path, arthicle_path]:
-        if not os.path.exists(x):
-            os.makedirs(x)
 
     blog_infos = parse_archive_page(archive_url, head, data, author_url, query_num, start_time, end_time, target_titles,
                                     merger_chapter)
+    if not blog_infos:
+        print("作者主页中无带标题的博客，无需爬取，程序退出")
+        exit()
+    for x in [path, arthicle_path]:
+        if not os.path.exists(x):
+            os.makedirs(x)
     if target_titles and merger_chapter:
         save_chapter(blog_infos, target_titles, author_name, author_ip)
 
@@ -227,7 +238,7 @@ def run(author_url, start_time, end_time, target_titles, merger_chapter):
 
 if __name__ == '__main__':
     # 作者的主页地址   示例 https://tang0396.lofter.com/   *最后的'/'不能少
-    author_url = "http://canggoucelia.lofter.com/"
+    author_url = "https://sensvoyage.lofter.com/"
 
     # ### 自定义部分 ### #
 
@@ -241,6 +252,6 @@ if __name__ == '__main__':
 
     # 章节合并：指定文章标题时该功能生效，开启后爬取多章节文章时会按标题自动合并文章。0为关闭，1为启动。
     # 注意，如果开启章节合并，文件名会使用你在标题指定中写的名称
-    merger_chapter = 1
+    merger_chapter = 0
 
     run(author_url, start_time, end_time, target_titles, merger_chapter)
