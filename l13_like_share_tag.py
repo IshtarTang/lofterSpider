@@ -624,16 +624,19 @@ def save_article(articles_info, file_path, classify_by_tag, prior_tags, agg_non_
 
         # 文件路径判断
         # 没有启动tag分类
+        key_tag_path = article_info["key tag"].replace("/", "&").replace("|", "&").replace("\\", "&") \
+            .replace("<", "《").replace(">", "》").replace(":", "：").replace('"', '”').replace("?", "？") \
+            .replace("*", "·").replace("(", "（").replace(")", "）")
         if not classify_by_tag:
             article_path = file_path + "/article"
         # 启动tag分类，未启用优先tag
         elif classify_by_tag and not prior_tags:
-            article_path = file_path + "/article/" + article_info["key tag"]
+            article_path = file_path + "/article/" + key_tag_path
         # 启用tag分类，启用优先tag
         else:
             # key tag在优先tag中
             if article_info["key tag"] in prior_tags:
-                article_path = file_path + "/article/prior/" + article_info["key tag"]
+                article_path = file_path + "/article/prior/" + key_tag_path
             # tag不在优先tag
             else:
                 # tag不在优先tag中，启用非优先tag聚合
@@ -641,7 +644,7 @@ def save_article(articles_info, file_path, classify_by_tag, prior_tags, agg_non_
                     article_path = file_path + "/article/other"
                 # tag不在优先tag中，未启用非优先tag聚合
                 else:
-                    article_path = file_path + "/article/other/" + article_info["key tag"]
+                    article_path = file_path + "/article/other/" + key_tag_path
 
         # 如果文件夹不存在，建立文件夹
         if not os.path.exists(article_path):
@@ -655,10 +658,7 @@ def save_article(articles_info, file_path, classify_by_tag, prior_tags, agg_non_
                     if print_level:
                         print("准备保存文章中的图片 {}", end="\t\t")
                     img_name = filename_title + " by " + article_info["author name in filename"] + ".jpg"
-    
-    
-    
-    
+                    img = requests.get(img_url, headers=useragentutil.get_headers()).content
                     filename = filename_check(filename, img, file_path, "jpg")
                     write_img(img, img_name, article_path)
                     if print_level:
@@ -670,7 +670,6 @@ def save_article(articles_info, file_path, classify_by_tag, prior_tags, agg_non_
         else:
             if count % 20 == 0 or count == len(articles_info):
                 print("保存完成")
-
 
 def save_text(texts_info, file_path, save_img_in_text):
     if not os.path.exists(file_path + "/text"):
@@ -795,6 +794,7 @@ def save_img(imgs_info, file_path, img_save_info, classify_by_tag, prior_tags, a
                 print("\n图片 {} 不是lofter站内图 ".format(img_url), end="\t")
             try:
                 img = requests.get(img_url, headers=useragentutil.get_headers()).content
+
             except:
                 print("保存失败，请尝试手动保存")
                 continue
@@ -802,20 +802,22 @@ def save_img(imgs_info, file_path, img_save_info, classify_by_tag, prior_tags, a
                 "public time"] + "." + img_type
 
             # 根据自动整理选项选择保存路径
-
+            key_tag_path = img_info["key tag"].replace("/", "&").replace("|", "&").replace("\\", "&") \
+                .replace("<", "《").replace(">", "》").replace(":", "：").replace('"', '”').replace("?", "？") \
+                .replace("*", "·").replace("(", "（").replace(")", "）")
             # 没有启动tag分类
             if not classify_by_tag:
                 img_path = file_path + "/img"
             # 启动tag分类，未启用优先tag
             elif classify_by_tag and not prior_tags:
-                if not os.path.exists(file_path + "/img/" + img_info["key tag"]):
-                    os.makedirs(file_path + "/img/" + img_info["key tag"])
-                img_path = file_path + "/img/" + img_info["key tag"]
+                if not os.path.exists(file_path + "/img/" + key_tag_path):
+                    os.makedirs(file_path + "/img/" + key_tag_path)
+                img_path = file_path + "/img/" + key_tag_path
             # 启用tag分类，启用优先tag
             else:
                 # key tag在优先tag中
                 if img_info["key tag"] in prior_tags:
-                    img_path = file_path + "/img/prior/" + img_info["key tag"]
+                    img_path = file_path + "/img/prior/" + key_tag_path
                 # tag不在优先tag
                 else:
                     # tag不在优先tag中，启用非优先tag聚合
@@ -823,7 +825,7 @@ def save_img(imgs_info, file_path, img_save_info, classify_by_tag, prior_tags, a
                         img_path = file_path + "/img/other"
                     # tag不在优先tag中，未启用非优先tag聚合
                     else:
-                        img_path = file_path + "/img/other/" + img_info["key tag"]
+                        img_path = file_path + "/img/other/" + key_tag_path
             # 文件名查重，保存
             filename = filename_check(filename, img, img_path, img_type)
             if not os.path.exists(img_path):
@@ -842,7 +844,7 @@ def save_img(imgs_info, file_path, img_save_info, classify_by_tag, prior_tags, a
             img_save_info["已保存"] = saved_num
             with open(file_path + "/img_save_info.json", "w", encoding="utf-8") as i_op1:
                 i_op1.write(json.dumps(img_save_info, indent=4, ensure_ascii=False))
-
+                
 
 def run(url, mode, save_mode, classify_by_tag, prior_tags, agg_non_prior_tag, login_info, start_time, tag_filt_num,
         min_hot, print_level, save_img_in_text, base_path):
