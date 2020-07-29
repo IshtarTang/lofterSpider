@@ -268,7 +268,7 @@ def save_all_fav(url, mode, file_path, login_info, start_time):
             print("\n已获取到最后一页，{}信息获取完成".format(str1))
             break
 
-        last_optimestamp = 0
+        last_timestamp = 0
         last_optime = "/"
         last_hot = 0
         # mode2会输出最后一条的点赞时间
@@ -280,7 +280,7 @@ def save_all_fav(url, mode, file_path, login_info, start_time):
                 pass
             print("最后一条的时间为 {}".format(last_optime), end="")
             # like2独有的最早时间指定。optime是点赞时间
-            if start_time and last_optimestamp < start_time_stamp:
+            if start_time and last_timestamp < start_time_stamp:
                 print("\n已获取到指定时间内所有博客，信息获取完成")
                 break
         elif mode == "tag":
