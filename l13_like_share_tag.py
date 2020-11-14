@@ -11,8 +11,8 @@ from requests.cookies import RequestsCookieJar
 import useragentutil
 
 """
-sessionStartTime		seesion建立的时间，不用动	同一次刷新中是不变	页面刷新没变
-persistedTime		不晓得？	同一次刷新中是不变	页面刷新没变
+sessionStartTime		seesion建立的时间，不用动	同一次刷新中不变    页面刷新没变
+persistedTime		不晓得？	同一次刷新中不变	页面刷新没变
 updatedTime		页面刷新的时间，在同一次刷新中是不变的，不用动	页面刷新会改变	
 LASTEVENT["time"]		我以为是当前时间，但是它一直没动，而且跟updatedTime几乎相同，差值1到2，同一次刷新中不变	页面刷新改变
 sendNumClass["allNum"]	？每次刷新页面会加一，有的时候不知道为啥会加一，一般不变
@@ -27,11 +27,12 @@ def write_html(html):
 
 # 保存文本
 def write_text(file, filename, path):
-    with open(path + "/" + filename, "w", encoding="utf-8") as op:
+    filename = filename.replace("\r", "")
+    with open(path + "/" + filename, "w", encoding="utf-8", errors="ignore") as op:
         op.write(file)
 
 
-# 保存图片 
+# 保存图片
 def write_img(file, filename, path):
     with open(path + "/" + filename, "wb") as op:
         op.write(file)
@@ -281,6 +282,9 @@ def save_all_fav(url, mode, file_path, login_info, start_time):
             print("最后一条的时间为 {}".format(last_optime), end="")
             # like2独有的最早时间指定。optime是点赞时间
             if start_time and last_timestamp < start_time_stamp:
+                print()
+                print(start_time_stamp)
+                print(last_timestamp)
                 print("\n已获取到指定时间内所有博客，信息获取完成")
                 break
         elif mode == "tag":
@@ -316,7 +320,6 @@ def infor_formater(fav_infos, fav_str, mode, file_path, start_time, min_hot, pri
 
     for x in fav_infos:
         blog_info = {}
-
         # 博客链接
         try:
             url = re.search('s\d{1,5}.blogPageUrl="(.*?)"', x).group(1)
@@ -347,17 +350,16 @@ def infor_formater(fav_infos, fav_str, mode, file_path, start_time, min_hot, pri
 
         if author_name_search:
             author_name = author_name_search.group(1).encode('latin-1').decode('unicode_escape', errors="replace")
-        # 正则没有匹配出来的话说明这一页的前面也有这个作者的博客，作者信息再前面，找到id再在前面搜索作者信息
+        # 正则没有匹配出来的话说明这一页的前面也有这个作者的博客，作者信息在前面，找到id再在前面搜索作者信息
         else:
             info_id = re.search("s\d{1,5}.blogInfo=(s\d{1,5})", x).group(1)
             test_names = re.findall(info_id + '.blogNickName="(.*?)"', fav_str.split('blogPageUrl="' + url + '"')[0])
             author_name = test_names[-1].encode('latin-1').decode('unicode_escape', errors="replace")
-        author_name = author_name
         blog_info["author name"] = author_name
         # 文件中有不允许出现的字符，在用于文件名时要全部替换掉，英文括号换成中文括号，避免在检查文件名重复时被切割
-        author_name_in_filename = author_name.replace("/", "&").replace("|", "&").replace("\\", "&") \
-            .replace("<", "《").replace(">", "》").replace(":", "：").replace('"', '”').replace("?", "？") \
-            .replace("*", "·").replace("\n", "").replace("(", "（").replace(")", "）")
+        author_name_in_filename = author_name.replace("/", "&").replace("|", "&").replace("\r", " ").replace(
+            "\\", "&").replace("<", "《").replace(">", "》").replace(":", "：").replace('"', '”').replace("?", "？") \
+            .replace("*", "·").replace("\n", "").replace("(", "（").replace(")", "）").strip()
         blog_info["author name in filename"] = author_name_in_filename
         # 作者ip
         author_ip = re.search("http[s]{0,1}://(.*?).lofter.com", url).group(1)
@@ -368,8 +370,8 @@ def infor_formater(fav_infos, fav_str, mode, file_path, start_time, min_hot, pri
         public_time = time.strftime("%Y-%m-%d", time_local1)
         blog_info["public time"] = public_time
         # tags
-        tags = re.search('s\d{1,5}.tag[s]{0,1}="(.*?)";', x).group(1).encode('utf-8').decode('unicode_escape').split(
-            ",")
+        tags = re.search('s\d{1,5}.tag[s]{0,1}="(.*?)";', x).group(1).strip().encode('utf-8').decode(
+            'unicode_escape').split(",")
         if tags[0] == "":
             tags = []
         lower_tags = []
@@ -384,9 +386,10 @@ def infor_formater(fav_infos, fav_str, mode, file_path, start_time, min_hot, pri
                                                                                              errors="ignore ")
         except:
             title = ""
-        title_in_filename = title.replace("/", "&").replace("|", "&").replace("\\", "&") \
+        title_in_filename = title.replace("/", "&").replace("|", "&").replace("\r", " ").replace(
+            "\\", "&") \
             .replace("<", "《").replace(">", "》").replace(":", "：").replace('"', '”').replace("?", "？") \
-            .replace("*", "·").replace("\n", "").replace("(", "（").replace(")", "）")
+            .replace("*", "·").replace("\n", "").replace("(", "（").replace(")", "）").strip()
         blog_info["title"] = title
         blog_info["title in filename"] = title_in_filename
 
@@ -419,11 +422,15 @@ def infor_formater(fav_infos, fav_str, mode, file_path, start_time, min_hot, pri
         blog_info["content"] = content
 
         # 文章中插的图片
+        illustration = []
+        img_src = parse.xpath("//img/@src")
         if content_buf1:
-            img_src = parse.xpath("//img/@src")
+            # 新格式
+            illustration = re.findall('"(http[s]{0,1}://imglf\d{0,1}.lf\d*.[0-9]{0,3}.net.*?)\?', "\n".join(img_src))
+        elif illustration == []:
+            # 旧格式
             illustration = re.findall('"(http[s]{0,1}://imglf\d{0,1}.nosdn\d*.[0-9]{0,3}.net.*?)\?', "\n".join(img_src))
-        else:
-            illustration = []
+
         blog_info["illustration"] = illustration
 
         # 外链
@@ -612,15 +619,23 @@ def save_article(articles_info, file_path, classify_by_tag, prior_tags, agg_non_
         article = article_head + "\n\n\n" + article_info["content"] + "\n\n\n" + article_tail
         filename_title = article_info["title in filename"]
         filename = filename_title + " by " + article_info["author name in filename"] + ".txt"
-
         # 提示输出
         count += 1
         if print_level:
-            print("保存：文章序号{} {} 原文链接：{}".format(articles_info.index(article_info) + 1, filename, article_info["url"]),
-                  end="\t\t")
+            try:
+                print(
+                    "保存：文章序号{} {} 原文链接：{}".format(articles_info.index(article_info) + 1, filename, article_info["url"]),
+                    end="\t\t")
+            except:
+                print(
+                    print("保存：文章序号{} 原文链接：{}".format(articles_info.index(article_info) + 1, article_info["url"]),
+                          end="\t\t"))
         else:
             if count % 20 == 0 or count == len(articles_info) or count == 0:
-                print("保存进度 {}/{}\t\t{}".format(count, len(articles_info), filename), end="\t\t")
+                try:
+                    print("保存进度 {}/{}\t\t{}".format(count, len(articles_info), filename), end="\t\t")
+                except:
+                    print("保存进度 {}/{}\t\t".format(count, len(articles_info)), end="\t\t")
 
         # 文件路径判断
         # 没有启动tag分类
@@ -653,13 +668,13 @@ def save_article(articles_info, file_path, classify_by_tag, prior_tags, agg_non_
         write_text(article, filename, article_path)
         # 保存文章中的图片
         if save_img_in_text:
-            if article_info["img urls"]:
-                for img_url in article_info["img urls"]:
+            if article_info["illustration"]:
+                for img_url in article_info["illustration"]:
                     if print_level:
-                        print("准备保存文章中的图片 {}", end="\t\t")
+                        print("准备保存文章中的图片 {}".format(img_url), end="\t\t")
                     img_name = filename_title + " by " + article_info["author name in filename"] + ".jpg"
                     img = requests.get(img_url, headers=useragentutil.get_headers()).content
-                    filename = filename_check(filename, img, file_path, "jpg")
+                    img_name = filename_check(img_name, img, article_path, "jpg")
                     write_img(img, img_name, article_path)
                     if print_level:
                         print("保存完成")
@@ -670,6 +685,7 @@ def save_article(articles_info, file_path, classify_by_tag, prior_tags, agg_non_
         else:
             if count % 20 == 0 or count == len(articles_info):
                 print("保存完成")
+
 
 def save_text(texts_info, file_path, save_img_in_text):
     if not os.path.exists(file_path + "/text"):
@@ -692,16 +708,24 @@ def save_text(texts_info, file_path, save_img_in_text):
 
         # 提示输出
         if count % 10 == 0 or count == len(texts_info):
-            print("保存进度 {}/{}\t\t{}".format(count, len(texts_info), filename), end="\t\t")
+            try:
+                print("保存进度 {}/{}\t\t{}".format(count, len(texts_info), filename), end="\t\t")
+            except:
+                print("保存进度 {}/{}\t\t{}".format(count, len(texts_info), "文件名异常"), end="\t\t")
+
         # 保存
         write_text(text, filename, file_path + "/text")
         # 保存文字中的图片
+
         if save_img_in_text:
-            if text_info["img urls"]:
-                for img_url in text_info["img urls"]:
-                    img_name = text_info + " by " + text_info["author name in filename"] + ".jpg"
+            if text_info["illustration"]:
+                for img_url in text_info["illustration"]:
+                    img_name = text_info["author name in filename"] + "-" + first_tag + "-" + text_info[
+                        "public time"] + ".jpg"
+
+                    # img_name = text_info + " by " + text_info["author name in filename"] + ".jpg"
                     img = requests.get(img_url, headers=useragentutil.get_headers()).content
-                    filename = filename_check(filename, img, file_path + "/text", "jpg")
+                    img_name = filename_check(img_name, img, file_path + "/text", "jpg")
                     write_img(img, img_name, file_path + "/text")
         if count % 10 == 0 or count == len(texts_info):
             print("保存完成")
@@ -739,13 +763,14 @@ def save_long_article(long_articles_info, file_path, save_img_in_text):
         if save_img_in_text:
             if l_info["long article img"]:
                 for img_url in l_info["long article img"]:
-                    re_url = re.findall('http[s]{0,1}://imglf\d{0,1}.nosdn\d*.[0-9]{0,3}.net.*', img_url)
+                    # re_url = re.findall('http[s]{0,1}://imglf\d{0,1}.nosdn\d*.[0-9]{0,3}.net.*', img_url)
+                    re_url = re.findall('http[s]{0,1}://imglf\d{0,1}.lf\d*.[0-9]{0,3}.net.*', img_url)
                     if not re_url:
                         print("\n图片 {} 不是lofter站内图 可能会保存失败".format(img_url), end="\t")
                     try:
                         img = requests.get(img_url, headers=useragentutil.get_headers()).content
                     except:
-                        print("保存失败，请尝试手动保存")
+                        print("保存失败，请尝试手动保存", end="\t")
                         continue
 
                     img_name = l_info["title in filename" \
@@ -789,7 +814,9 @@ def save_img(imgs_info, file_path, img_save_info, classify_by_tag, prior_tags, a
             if print_level:
                 print("正在保存图片 {} ".format(img_url), end="\t\t")
             # 检查图片是否是站内图
-            re_url = re.findall('http[s]{0,1}://imglf\d{0,1}.nosdn\d*.[0-9]{0,3}.net.*', img_url)
+            # re_url = re.findall('http[s]{0,1}://imglf\d{0,1}.nosdn\d*.[0-9]{0,3}.net.*', img_url)
+            re_url = re.findall('http[s]{0,1}://imglf\d{0,1}.lf\d*.[0-9]{0,3}.net.*', img_url)
+
             if not re_url:
                 print("\n图片 {} 不是lofter站内图 ".format(img_url), end="\t")
             try:
@@ -844,7 +871,7 @@ def save_img(imgs_info, file_path, img_save_info, classify_by_tag, prior_tags, a
             img_save_info["已保存"] = saved_num
             with open(file_path + "/img_save_info.json", "w", encoding="utf-8") as i_op1:
                 i_op1.write(json.dumps(img_save_info, indent=4, ensure_ascii=False))
-                
+
 
 def run(url, mode, save_mode, classify_by_tag, prior_tags, agg_non_prior_tag, login_info, start_time, tag_filt_num,
         min_hot, print_level, save_img_in_text, base_path):
@@ -896,6 +923,8 @@ def run(url, mode, save_mode, classify_by_tag, prior_tags, agg_non_prior_tag, lo
             print("删除上次保存的图片", end="   ")
             shutil.rmtree(file_path + "/img")
             print("删除完成")
+
+    # 运行
 
     # 阶段1，信息获取和整理 format_fav_info.json存在为这一阶段结束的标志
     step1_start_time = time.time()
@@ -978,7 +1007,7 @@ def run(url, mode, save_mode, classify_by_tag, prior_tags, agg_non_prior_tag, lo
     is_on = lambda x: "启动" if x else "未启动"
     print("\n自动整理选项：\n按tag整理至同文件夹内\t{}\n指定优先tag\t{}\n非优先tag聚合\t{}".format(is_on(classify_by_tag), is_on(prior_tags),
                                                                           is_on(agg_non_prior_tag)))
-    print("优先tag： {}".format(prior_tags))
+    # print("优先tag： {}".format(prior_tags))
     stop_key = input("\n可以现在退出对自动整理选项进行修改，并删除classified_fav_info.json以重新执行阶段2，输入ok以继续\n")
     if not stop_key == "ok":
         exit()
@@ -1058,34 +1087,33 @@ def run(url, mode, save_mode, classify_by_tag, prior_tags, agg_non_prior_tag, lo
 
 if __name__ == '__main__':
     # 基础设置  -------------------------------------------------------- #
-    url = "http://www.lofter.com/tag/%E5%88%BA%E5%AE%A2%E4%BF%A1%E6%9D%A1/total"
-    # url = "https://ishtartang.lofter.com/"
+    url = "https://www.lofter.com/tag/hannigram/total"
     # 运行模式
     mode = "tag"
 
     # 保存哪些内容，1为开启，0为关闭
     # article-文章  text-文本   long article-长文章     img-保存图片
-    save_mode = {"article": 0, "text": 0, "long article": 1, "img": 0}
+    save_mode = {"article": 1, "text": 1, "long article": 1, "img": 1}
 
     # 自动整理设置    --------------------------------------------------- #
     # 按tag分类：0关闭 1启动
     classify_by_tag = 1
 
     # 优先tag:该项不为空时为启动该功能，未启动按tag分类时该功能无效
-    prior_tags = ["edward kenway",'海尔森肯威', 'jacob','haytham kenway']
+    prior_tags = []
     # 非优先tag聚合：
     agg_non_prior_tag = 0
 
     # like2模式设置   --------------------------------------------------- #
     # 手机号
-    phone_number = "1897*****"
+    phone_number = "18975*******"
     # 密码
-    password = "54*****"
+    password = "*****"
     # 登录授权码
-    login_auth = "DPbMaZp33-2I5Gpo9gA9PpXfTD5hJiFX3l25A-tGGO0kyrrpURLY-LC9pPHVyO4Np00KVQROF4Ud%0AN479hfDhBqYZzuhKbfl_"
-
+    login_auth = "DJmZ-rO1znUFSCRcBjT0AsHxTGmLbqI26O-RSN12Rl-v3N5D9mJsZX-KsrBEdbB3nQwFZqd7TMr6%0AWNf-BulgwCF*****"
     # 最早时间指定 格式：2019-10-1
-    start_time = "2020-6-30"
+    start_time = "2020-11-12"
+    # 上次运行时间 2020-11-14
 
     # tag模式的最低热度限制  --------------------------------------------- #
     min_hot = 0
@@ -1096,9 +1124,9 @@ if __name__ == '__main__':
     save_img_in_text = 1
 
     # tag统计输出过滤，只显示出现过多少次以上的tag。
-    tag_filt_num = 10
+    tag_filt_num = 50
 
-    # 输出等级，等级1输出的信息较多，等级0较少，建议0
+    # 输出等级，等级1输出的信息较多，等级0较少，非调试建议0
     print_level = 0
 
     # 文件设置  -------------------------------------------------------- #
