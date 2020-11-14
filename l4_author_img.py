@@ -224,9 +224,9 @@ def parse_blogs_info(blogs_info, parsed_blogs_info, author_name, author_ip, targ
 
         if target_tags:
             if not tag_filter(blog_tags, target_tags, tags_filter_mode):
-                print("该篇博客被过滤掉")
                 del blogs_info[0]
                 parsed_num += 1
+                print("该篇博客被过滤掉，剩余%d" % (len(blogs_info)))
                 # 文件刷新
                 if (blog_num % file_update_interval == 0) or len(blogs_info) == 0:
                     file_update("./dir/author_img_file/blogs_info.json", blogs_info)
@@ -237,16 +237,22 @@ def parse_blogs_info(blogs_info, parsed_blogs_info, author_name, author_ip, targ
                 continue
 
         # 不同作者主页会有不同页面结构，所以没有使用xpath而是直接用正则匹配出所有的图片链接，其中会包括一些评论头像和推荐图片
-        # imgs_url = re.findall('"(http://imglf\d.nosdn\d*.126.net.*?)"', content)
-        imgs_url = re.findall('"(http[s]{0,1}://imglf\d{0,1}.nosdn\d*.[0-9]{0,3}.net.*?)"', content)
+        # 大概9月前的图片链接格式是nosdn，9月之后是imglf
+        # imgs_url = re.findall('"(http[s]{0,1}://imglf\d{0,1}.nosdn\d*.[0-9]{0,3}.net.*?)"', content)
+        imgs_url = re.findall('"(http[s]{0,1}://imglf\d{0,1}.lf\d*.[0-9]{0,3}.net.*?)"', content)
+
+        # 过滤后为空说明没有获取到有效图片
+        if not img_fliter(imgs_url):
+            print("使用旧正则表达式",end="\t")
+            imgs_url = re.findall('"(http[s]{0,1}://imglf\d.nosdn\d*.12\d.net.*?)"', content)
+
         imgs_url = list(set(imgs_url))  # 转为set去重
         # 判断跟上一博客的发表日期是否相同，如果是的话文件下标接上次的增加
         img_index = 0
         if img_time == pre_page_last_img_info["last_file_time"]:
             img_index = pre_page_last_img_info["index"]
 
-        # 过滤博客页面中获取到的图片链接
-        # print("\n{}".format(imgs_url))
+        # 过滤图片链接
         imgs_url = img_fliter(imgs_url)
 
         # 整理图片信息，用于下一步保存
@@ -322,9 +328,12 @@ def download_img(imgs_info, imgs_info_saved, author_name, author_ip, file_update
     save_num = len(imgs_info_saved)
     for img_index in range(len(imgs_info)):
         pic_name = imgs_info[0]["pic_name"]
+        pic_name_in_filename = pic_name.replace("/", "&").replace("|", "&").replace("\r", " ").replace(
+            "\\", "&").replace("<", "《").replace(">", "》").replace(":", "：").replace('"', '”').replace("?", "？") \
+            .replace("*", "·").replace("\n", "").replace("(", "（").replace(")", "）").strip()
 
         pic_url = imgs_info[0]["img_url"]
-        img_path = dir_path + "/" + pic_name
+        img_path = dir_path + "/" + pic_name_in_filename
         print("获取图片 %s" % (pic_url))
         content = requests.get(pic_url, headers=useragentutil.get_headers()).content
         with open(img_path, "wb") as op:
@@ -392,7 +401,10 @@ def run(author_url, start_time, end_time, target_tags, tags_filter_mode, file_up
     data = make_data(author_id, query_num)
     head = make_head(author_url)
 
-    print("作者名%s,lofter ip %s,主页链接 %s" % (author_name, author_ip, author_url))
+    try:
+        print("作者名%s,lofter ip %s,主页链接 %s" % (author_name, author_ip, author_url))
+    except:
+        print("作者名中有异常符号,无法显示,lofter ip %s,主页链接 %s" % (author_ip, author_url))
 
     deal_file("init")
     dir_path = "./dir/author_img_file"
@@ -433,7 +445,7 @@ if __name__ == "__main__":
     # 作者在头像下放了tag，导致tag过滤失效，所有的内容都会被保存
 
     # 作者的主页地址   示例 https://ishtartang.lofter.com/   *最后的'/'不能少
-    author_url = "https://biaay002.lofter.com/"
+    author_url = "http://55631691.lofter.com/"
 
     # ### 自定义部分 ### #
 
@@ -441,7 +453,8 @@ if __name__ == "__main__":
     start_time = ""
     end_time = ""
     # 指定保留有哪些tag的博客，空值为不过滤
-    target_tags = ["虐杀原形", "刺客信条", "看门狗", "看门狗2"]
+    # target_tags = ["马赛", "赛门", "马康", "马库斯", "康纳", "connor", "底特律", "detroit become human", "ggad", "刺客信条"]
+    target_tags = ["汉尼拔", "拔杯", "Hannibal", "hannigram", "麦斯米科尔森", "madsmikkslsen"]
     # tag过滤模式，为in时会保留没有任何tag的博客，为out时不保留
     tags_filter_mode = "out"
 
