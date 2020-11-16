@@ -423,13 +423,14 @@ def infor_formater(fav_infos, fav_str, mode, file_path, start_time, min_hot, pri
 
         # 文章中插的图片
         illustration = []
-        img_src = parse.xpath("//img/@src")
         if content_buf1:
-            # 新格式
+            # 匹配新格式
+            img_src = parse.xpath("//img/@src")
             illustration = re.findall('"(http[s]{0,1}://imglf\d{0,1}.lf\d*.[0-9]{0,3}.net.*?)\?', "\n".join(img_src))
-        elif illustration == []:
-            # 旧格式
-            illustration = re.findall('"(http[s]{0,1}://imglf\d{0,1}.nosdn\d*.[0-9]{0,3}.net.*?)\?', "\n".join(img_src))
+            if illustration == []:
+                # 匹配旧格式
+                illustration = re.findall('"(http[s]{0,1}://imglf\d{0,1}.nosdn\d*.[0-9]{0,3}.net.*?)\?',
+                                          "\n".join(img_src))
 
         blog_info["illustration"] = illustration
 
