@@ -105,8 +105,8 @@ def img_fliter(imgs_url):
     fliterd_imgs_url = []
     for img_url in imgs_url:
         # 按链接格式过滤掉头像图片和推荐图片
-        if "16y16" in img_url or "&amp;" in img_url:
-            continue
+        if "16y16" in img_url or "&amp;" in img_url or "64x64" in img_url or "16x16" in img_url:
+             continue
         # 删除图片链接中的大小参数，获取时会默认最高画质
         img_url = img_url.split("imageView")[0]
         # img_url = re.sub(r"imageView&thumbnail=\d*x\d*&quality=\d+&", "", img_url)
@@ -243,7 +243,7 @@ def parse_blogs_info(blogs_info, parsed_blogs_info, author_name, author_ip, targ
 
         # 过滤后为空说明没有获取到有效图片
         if not img_fliter(imgs_url):
-            print("使用旧正则表达式",end="\t")
+            print("使用旧正则表达式", end="\t")
             imgs_url = re.findall('"(http[s]{0,1}://imglf\d.nosdn\d*.12\d.net.*?)"', content)
 
         imgs_url = list(set(imgs_url))  # 转为set去重
@@ -445,7 +445,8 @@ if __name__ == "__main__":
     # 作者在头像下放了tag，导致tag过滤失效，所有的内容都会被保存
 
     # 作者的主页地址   示例 https://ishtartang.lofter.com/   *最后的'/'不能少
-    author_url = "http://55631691.lofter.com/"
+    author_url = "https://allkakashi.lofter.com/"
+
 
     # ### 自定义部分 ### #
 
@@ -453,8 +454,8 @@ if __name__ == "__main__":
     start_time = ""
     end_time = ""
     # 指定保留有哪些tag的博客，空值为不过滤
-    # target_tags = ["马赛", "赛门", "马康", "马库斯", "康纳", "connor", "底特律", "detroit become human", "ggad", "刺客信条"]
-    target_tags = ["汉尼拔", "拔杯", "Hannibal", "hannigram", "麦斯米科尔森", "madsmikkslsen"]
+    target_tags = ["卡卡西"]
+    # target_tags = ["汉尼拔", "拔杯", "Hannibal", "hannigram", "麦斯米科尔森", "madsmikkslsen"]
     # tag过滤模式，为in时会保留没有任何tag的博客，为out时不保留
     tags_filter_mode = "out"
 
