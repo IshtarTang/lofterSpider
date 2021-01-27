@@ -156,6 +156,7 @@ def save_file(blog_infos, author_name, author_ip):
         parse = get_parse(url)
         article_content = parse_template.get_content(parse, template_id, title)
         article = article_head + "\n\n\n\n" + article_content
+        article = article.encode("utf-8",errors="replace").decode("utf-8",errors="replace")
         with open(arthicle_path + "/" + file_name + ".txt", "w", encoding="utf-8") as op:
             op.write(article)
         print("{} by {} 保存完毕".format(print_title, author_name))
@@ -242,7 +243,7 @@ def run(author_url, start_time, end_time, target_titles, merger_chapter):
 
 if __name__ == '__main__':
     # 作者的主页地址   示例 https://ishtartang.lofter.com/   *最后的'/'不能少
-    author_url = "http://smokedshark.lofter.com/"
+    author_url = "https://ururu293.lofter.com/"
 
     # ### 自定义部分 ### #
 
