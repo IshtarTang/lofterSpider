@@ -1,5 +1,6 @@
 from lxml.html import fromstring, tostring
 from html.parser import HTMLParser
+from lxml.html import etree
 
 """
 //div[@class="content"]			基本版		有标题	http://yangliu12.lofter.com/post/30ee0643_1c98d95fa
@@ -22,7 +23,7 @@ from html.parser import HTMLParser
 """
 
 
-# 不到h标签的排版会比较好看，所以优先匹配没有标题的，标题会在正式匹配种被去掉
+# 不到h标签的排版会比较好看，所以优先匹配没有标题的，标题会在正式匹配中被去掉
 # 到h标签能确保没有标题，但排版不能还原原文档
 
 
@@ -30,7 +31,9 @@ from html.parser import HTMLParser
 def all_purpose_template(parse, title):
     lines = parse.xpath('/html//text()')
     content = "".join(lines)
-    content = content.split(title, 2)[2].split("评论")[0]
+    title = title.encode("gbk", errors="replace").decode("gbk", errors="replace").replace("?", "")
+    open("test.html", "w", encoding="utf-8").write(etree.tostring(parse).decode("utf-8"))
+    content = content.split(title, 2)[2].split("评论")[0].encode("utf-8",errors="replace").decode("utf-8",errors="replace")
     return content
 
 
