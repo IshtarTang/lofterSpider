@@ -34,7 +34,7 @@ def chapter_format(target_titles, blogs_info):
         for target_title in target_titles:
             if target_title in blog_info["title"]:
                 chapter_infos[target_title].append(blog_info)
-    # 由于爬虫的顺序是从后wan
+
     for target_title in target_titles:
         chapter_infos[target_title] = chapter_infos[target_title][::-1]
     return chapter_infos
@@ -77,7 +77,7 @@ def parse_archive_page(url, header, data, author_url, query_num, start_time, end
         blog_info_dic = {}
         blog_num += 1
 
-        # 获取缩略图链接，过滤没有图片的博客链接
+        # 获取标题，过滤没有标题的博客链接
         try:
             title = re.findall(r'[\d]*.title="(.*?)"', blog_info)[0]
             blog_info_dic["title"] = title.encode('latin-1').decode('unicode_escape')
@@ -85,6 +85,8 @@ def parse_archive_page(url, header, data, author_url, query_num, start_time, end
             blog_info_dic["title"] = ""
         if not blog_info_dic["title"]:
             continue
+        # 输出用标题
+        blog_info_dic["print_title"] = blog_info_dic["title"].encode("gbk",errors="replace").decode("gbk",errors="replace")
 
         # 博客的编号 比如https://lindujiu.lofter.com/post/423a9c_1c878d5e6 的 423a9c_1c878d5e6
         blog_index = re.search(r's[\d]*.permalink="(.*?)";', blog_info).group(1)
@@ -107,10 +109,10 @@ def parse_archive_page(url, header, data, author_url, query_num, start_time, end
         print("开始进行标题过滤")
         for blog_info in parsed_blog_info:
             if title_filter(blog_info["title"], target_titles):
-                print("文章 {} 保留".format(blog_info["title"]))
+                print("文章 {} 保留".format(blog_info["print_title"]))
                 filterd_blog_infos.append(blog_info)
             else:
-                print("文章 {} 被过滤掉".format(blog_info["title"]))
+                print("文章 {} 被过滤掉".format(blog_info["print_title"]))
     print("\n过滤后剩余文章 {} 篇\n".format(len(filterd_blog_infos)))
     if not merger_chapter:
 
@@ -120,7 +122,7 @@ def parse_archive_page(url, header, data, author_url, query_num, start_time, end
         chapter_infos = chapter_format(target_titles, filterd_blog_infos)
         print("整理完成")
         for target_title in target_titles:
-            print("获取到 {} 共{}章".format(target_title, len(chapter_infos[target_title])))
+            print("获取到 {} 共{}章".format(target_title.encode("gbk",errors="replace").decode("gbk",errors="replace"), len(chapter_infos[target_title])))
         print()
         return chapter_infos
 
@@ -141,9 +143,10 @@ def save_file(blog_infos, author_name, author_ip):
 
     for blog_info in blog_infos:
         title = blog_info["title"]
+        print_title = blog_info["print_title"]
         public_time = blog_info["time"]
         url = blog_info["url"]
-        print("准备保存：{} by {}，原文连接： {} ".format(title, author_name, url), end="    ")
+        print("准备保存：{} by {}，原文连接： {} ".format(print_title, author_name, url), end="    ")
         file_name = "{} by {}".format(title, author_name)
         file_name = file_name.replace("/", "&").replace("|", "&").replace("\\", "&").replace("<", "《") \
             .replace(">", "》").replace(":", "：").replace('"', '”').replace("?", "？").replace("*", "·"). \
@@ -155,7 +158,7 @@ def save_file(blog_infos, author_name, author_ip):
         article = article_head + "\n\n\n\n" + article_content
         with open(arthicle_path + "/" + file_name + ".txt", "w", encoding="utf-8") as op:
             op.write(article)
-        print("{} by {} 保存完毕".format(title, author_name))
+        print("{} by {} 保存完毕".format(print_title, author_name))
 
 
 def save_chapter(article_infos, target_titles, author_name, author_ip):
@@ -174,7 +177,8 @@ def save_chapter(article_infos, target_titles, author_name, author_ip):
 
     for target_title in target_titles:
         chapters_info = article_infos[target_title]
-        print("开始保存 {}，第一章节链接 {}".format(target_title, chapters_info[0]["url"]))
+        print_target_title = target_title.encode("gbk",errors="replace").decode("gbk",errors="replace")
+        print("开始保存 {}，第一章节链接 {}".format(print_target_title, chapters_info[0]["url"]))
         file_name = target_title + " by " + author_name
         file_name = file_name.replace("/", "&").replace("|", "&").replace("\\", "&").replace("<", "《") \
             .replace(">", "》").replace(":", "：").replace('"', '”').replace("?", "？").replace("*", "·"). \
@@ -195,7 +199,7 @@ def save_chapter(article_infos, target_titles, author_name, author_ip):
 
         with open(arthicle_path + "/" + file_name + ".txt", "w", encoding="utf-8") as op:
             op.write(article_content)
-        print("{} 保存完成\n".format(target_title))
+        print("{} 保存完成\n".format(print_target_title))
 
 
 def run(author_url, start_time, end_time, target_titles, merger_chapter):
@@ -237,13 +241,13 @@ def run(author_url, start_time, end_time, target_titles, merger_chapter):
 
 
 if __name__ == '__main__':
-    # 作者的主页地址   示例 https://tang0396.lofter.com/   *最后的'/'不能少
-    author_url = "https://sensvoyage.lofter.com/"
+    # 作者的主页地址   示例 https://ishtartang.lofter.com/   *最后的'/'不能少
+    author_url = "http://smokedshark.lofter.com/"
 
     # ### 自定义部分 ### #
 
     # 设定爬取哪个时间段的博客，空值为不设定 格式："yyyy-MM-dd"
-    start_time = "2019-01-01"
+    start_time = ""
     end_time = ""
 
     # 文章标题指定：只爬取标题标题包含指定内容的文章，适用于爬取系列文或多章节文章，空值为不指定。
