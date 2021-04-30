@@ -246,7 +246,13 @@ def parse_blogs_info(blogs_info, parsed_blogs_info, author_name, author_ip, targ
             print("使用旧正则表达式", end="\t")
             imgs_url = re.findall('"(http[s]{0,1}://imglf\d.nosdn\d*.12\d.net.*?)"', content)
 
-        imgs_url = list(set(imgs_url))  # 转为set去重
+        # 去除重复链接
+        filter_imgs_url = []
+        for img_url in imgs_url:
+            if img_url not in filter_imgs_url:
+                filter_imgs_url.append(img_url)
+        imgs_url = filter_imgs_url
+        
         # 判断跟上一博客的发表日期是否相同，如果是的话文件下标接上次的增加
         img_index = 0
         if img_time == pre_page_last_img_info["last_file_time"]:
