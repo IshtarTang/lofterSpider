@@ -32,7 +32,7 @@ def all_purpose_template(parse, title):
     lines = parse.xpath('/html//text()')
     content = "".join(lines)
     title = title.encode("gbk", errors="replace").decode("gbk", errors="replace").replace("?", "")
-    open("test.html", "w", encoding="utf-8").write(etree.tostring(parse).decode("utf-8"))
+    open("test.html", "w", encoding="utf-8").write(etree.tostring(parse,encoding='utf-8').decode("utf-8"))
     content = content.split(title, 2)[2].split("评论")[0].encode("utf-8",errors="replace").decode("utf-8",errors="replace")
     return content
 
