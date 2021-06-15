@@ -106,7 +106,7 @@ def img_fliter(imgs_url):
     for img_url in imgs_url:
         # 按链接格式过滤掉头像图片和推荐图片
         if "16y16" in img_url or "&amp;" in img_url or "64x64" in img_url or "16x16" in img_url:
-             continue
+            continue
         # 删除图片链接中的大小参数，获取时会默认最高画质
         img_url = img_url.split("imageView")[0]
         # img_url = re.sub(r"imageView&thumbnail=\d*x\d*&quality=\d+&", "", img_url)
@@ -252,7 +252,8 @@ def parse_blogs_info(blogs_info, parsed_blogs_info, author_name, author_ip, targ
             if img_url not in filter_imgs_url:
                 filter_imgs_url.append(img_url)
         imgs_url = filter_imgs_url
-        
+        # imgs_url = list(set(imgs_url))  # 转为set去重
+
         # 判断跟上一博客的发表日期是否相同，如果是的话文件下标接上次的增加
         img_index = 0
         if img_time == pre_page_last_img_info["last_file_time"]:
@@ -412,6 +413,20 @@ def run(author_url, start_time, end_time, target_tags, tags_filter_mode, file_up
     except:
         print("作者名中有异常符号,无法显示,lofter ip %s,主页链接 %s" % (author_ip, author_url))
 
+    if target_tags:
+        print("tag过滤已经打开，仅保存含有tag中包含%s的图片，"%(" ["+",".join(target_tags)+"] "),end="")
+        if tags_filter_mode == "in":
+            print("没有tag的图片将会保留")
+        else:
+            print("没有tag的图片将不会保留")
+    else:
+        print("tag过滤未打开，将保存所有图片")
+    print("tag过滤和模式参数为：target_tags，tags_filter_mode，请根据需求自行修改")
+    start_command = input("输入ok以启动程序\n")
+    if start_command != "ok":
+        print("程序退出")
+        exit()
+
     deal_file("init")
     dir_path = "./dir/author_img_file"
     # 判断博客解析进度
@@ -451,20 +466,19 @@ if __name__ == "__main__":
     # 作者在头像下放了tag，导致tag过滤失效，所有的内容都会被保存
 
     # 作者的主页地址   示例 https://ishtartang.lofter.com/   *最后的'/'不能少
-    author_url = "https://allkakashi.lofter.com/"
-
+    author_url = "https://lofterxms.lofter.com/"
 
     # ### 自定义部分 ### #
 
     # 设定爬取哪个时间段的博客，空值为不设定 格式："yyyy-MM-dd"
     start_time = ""
     end_time = ""
-    # 指定保留有哪些tag的博客，空值为不过滤
-    target_tags = ["卡卡西"]
-    # target_tags = ["汉尼拔", "拔杯", "Hannibal", "hannigram", "麦斯米科尔森", "madsmikkslsen"]
-    # tag过滤模式，为in时会保留没有任何tag的博客，为out时不保留
-    tags_filter_mode = "out"
 
+    # 指定保留有哪些tag的博客，空值为不过滤
+    target_tags = []
+
+    # tag过滤模式，为in时会保留没有任何tag的博客，为out时不保留。target_tags不为空时该项有效
+    tags_filter_mode = "in"
     # 间隔多久把数据刷新到文件中一次
     file_update_interval = 10
 
