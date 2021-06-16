@@ -7,6 +7,7 @@ from lxml.html import etree
 import useragentutil
 import parse_template
 import l4_author_img
+import l13_like_share_tag
 
 session = requests.session()
 
@@ -17,30 +18,7 @@ def get_parse(url):
     return parse
 
 
-def title_filter(title, target_titles):
-    for target_title in target_titles:
-        if target_title in title:
-            return 1
-    return 0
-
-
-def chapter_format(target_titles, blogs_info):
-    chapter_infos = {}
-    # 以title为key的字典，值为该标题下章节的信息
-    for target_title in target_titles:
-        chapter_infos[target_title] = []
-    # 加入信息
-    for blog_info in blogs_info:
-        for target_title in target_titles:
-            if target_title in blog_info["title"]:
-                chapter_infos[target_title].append(blog_info)
-
-    for target_title in target_titles:
-        chapter_infos[target_title] = chapter_infos[target_title][::-1]
-    return chapter_infos
-
-
-def parse_archive_page(url, header, data, author_url, query_num, start_time, end_time, target_titles, merger_chapter):
+def parse_archive_page(url, header, data, author_url, author_name, query_num, start_time, end_time):
     all_blog_info = []
 
     while True:
@@ -77,133 +55,115 @@ def parse_archive_page(url, header, data, author_url, query_num, start_time, end
         blog_info_dic = {}
         blog_num += 1
 
-        # 获取标题，过滤没有标题的博客链接
-        try:
-            title = re.findall(r'[\d]*.title="(.*?)"', blog_info)[0]
-            blog_info_dic["title"] = title.encode('latin-1').decode('unicode_escape')
-        except:
-            blog_info_dic["title"] = ""
-        if not blog_info_dic["title"]:
+        # 获取标题
+        title = ""
+        # 获取标题，纯文本博客会获取一个空标题，图片博客没有标题
+        re_title = re.findall(r'[\d]*\.title="(.*?)"', blog_info)
+        re_content = re.findall(r'[\d]*\.content="(.*?)"', blog_info)
+        # 这个判断总觉得有点问题
+        if re_title and re_title[0]:
+            title = re_title[0].encode('latin-1').decode('unicode_escape')
+            blog_info_dic["blog_type"] = "article"
+        elif re_content:
+            # 没有标题的纯文本信息，先弄一个临时title
+            title = "tmp_title"
+            blog_info_dic["blog_type"] = "text"
+
+        # 没有title就直接跳过后面的解析
+        if not title:
             continue
-        # 输出用标题
-        blog_info_dic["print_title"] = blog_info_dic["title"].encode("gbk",errors="replace").decode("gbk",errors="replace")
 
         # 博客的编号 比如https://lindujiu.lofter.com/post/423a9c_1c878d5e6 的 423a9c_1c878d5e6
         blog_index = re.search(r's[\d]*.permalink="(.*?)";', blog_info).group(1)
         blog_info_dic["url"] = author_url + "post/" + blog_index
 
         # 获取时间
-        # time_local = time.localtime(int(timestamp) / 1000)
         time_local = time.localtime(int(int(timestamp) / 1000))
         dt_time = time.strftime("%Y-%m-%d", time_local)
         # public_time = time.strftime("%Y-%m-%d", time.localtime(int(int(timestamp) / 1000)))
         blog_info_dic["time"] = dt_time
+        if blog_info_dic["blog_type"] == "text":
+            title = "{} {}".format(author_name, dt_time)
+        blog_info_dic["title"] = title
+        blog_info_dic["print_title"] = blog_info_dic["title"].encode("gbk", errors="replace").decode("gbk",
+
+                                                                                                     errors="replace")
 
         parsed_blog_info.append(blog_info_dic)
 
-    print("归档页面解析完毕，共获取博客链接数%d，带标题博客数%d" % (blog_num, len(parsed_blog_info)))
-    if not target_titles:
-        return parsed_blog_info
-    else:
-        filterd_blog_infos = []
-        print("开始进行标题过滤")
-        for blog_info in parsed_blog_info:
-            if title_filter(blog_info["title"], target_titles):
-                print("文章 {} 保留".format(blog_info["print_title"]))
-                filterd_blog_infos.append(blog_info)
-            else:
-                print("文章 {} 被过滤掉".format(blog_info["print_title"]))
-    print("\n过滤后剩余文章 {} 篇\n".format(len(filterd_blog_infos)))
-    if not merger_chapter:
-
-        return filterd_blog_infos
-    else:
-        print("开始整理章节")
-        chapter_infos = chapter_format(target_titles, filterd_blog_infos)
-        print("整理完成")
-        for target_title in target_titles:
-            print("获取到 {} 共{}章".format(target_title.encode("gbk",errors="replace").decode("gbk",errors="replace"), len(chapter_infos[target_title])))
-        print()
-        return chapter_infos
+    print("归档页面解析完毕，共获取博客链接数%d，文本与文章篇数%d" % (blog_num, len(parsed_blog_info)))
+    return parsed_blog_info
 
 
 def save_file(blog_infos, author_name, author_ip):
     print("开始保存文章内容")
+    # 拿一篇出来，测试匹配模板
     first_parse = get_parse(blog_infos[0]["url"])
-    first_title = blog_infos[0]["title"]
-    template_id = parse_template.matcher(first_parse, first_title)
+    template_id = parse_template.matcher(first_parse)
     print("文字匹配模板为模板{}".format(template_id))
     if template_id == 0:
         print("文字匹配模板是根据作者主页自动匹配的，模板0是一个匹配度比较广的模板，使用模板0说明没有其他的模板匹配成功，除了文章主体之外可能会爬到一些其他的内容，也有可能出现文章部分内容缺失")
-        str = input("输入ok确定继续爬取，或输入任意其他文字退出\n")
-        if not str == "ok":
+        input1 = input("输入ok确定继续爬取，或输入任意其他文字退出\n")
+        if not input1 == "ok":
             print("退出")
             exit()
-    arthicle_path = "./dir/article/{}".format(author_name)
+    # 开始保存
 
+    arthicle_path = "./dir/article/{}".format(author_name)
     for blog_info in blog_infos:
+        # 信息提取
         title = blog_info["title"]
         print_title = blog_info["print_title"]
         public_time = blog_info["time"]
         url = blog_info["url"]
-        print("准备保存：{} by {}，原文连接： {} ".format(print_title, author_name, url), end="    ")
-        file_name = "{} by {}".format(title, author_name)
-        file_name = file_name.replace("/", "&").replace("|", "&").replace("\\", "&").replace("<", "《") \
-            .replace(">", "》").replace(":", "：").replace('"', '”').replace("?", "？").replace("*", "·"). \
-            replace("\n", "").replace("(", "（").replace(
-            ")", "）")
-        article_head = "{} by {}[{}]\n发表时间：{}\n原文链接： {}".format(title, author_name, author_ip, public_time, url)
+        print("准备保存：{} ，原文连接： {} ".format(print_title, url), end="    ")
+
+        # 文件头
+        if blog_info["blog_type"] == "article":
+            article_head = "{} by {}[{}]\n发表时间：{}\n原文链接： {}".format(title, author_name, author_ip, public_time, url)
+        else:
+            article_head = "{}[{}]\n原文链接： {}".format(title, author_ip, url)
+        # 正文
         parse = get_parse(url)
         article_content = parse_template.get_content(parse, template_id, title)
-        article = article_head + "\n\n\n\n" + article_content
-        article = article.encode("utf-8",errors="replace").decode("utf-8",errors="replace")
-        with open(arthicle_path + "/" + file_name + ".txt", "w", encoding="utf-8") as op:
+
+        # 文件尾，文章中插的图片
+        # 匹配新格式
+        img_src = parse.xpath("//img/@src")
+        tmp_str = "\n".join(img_src)
+        illustration = re.findall('(http[s]{0,1}://imglf\d{0,1}.lf\d*.[0-9]{0,3}.net.*?)\?', tmp_str)
+        if illustration == []:
+            # 匹配旧格式
+            illustration = re.findall('"(http[s]{0,1}://imglf\d{0,1}.nosdn\d*.[0-9]{0,3}.net.*?)\?',
+                                      "\n".join(img_src))
+        if illustration:
+            article_tail = "博客中包含的图片：\n" + "\n".join(illustration)
+        else:
+            article_tail = ""
+
+        # 全文
+        article = article_head + "\n\n\n\n" + article_content + "\n\n\n" + article_tail
+        article = article.encode("utf-8", errors="replace").decode("utf-8", errors="replace")
+
+        # 文件名
+        if blog_info["blog_type"] == "article":
+            # 文章用 文章名by作者，替换掉非法字符
+            file_name = "{} by {}.txt".format(title, author_name)
+            file_name = file_name.replace("/", "&").replace("|", "&").replace("\\", "&").replace("<", "《") \
+                .replace(">", "》").replace(":", "：").replace('"', '”').replace("?", "？").replace("*", "·"). \
+                replace("\n", "").replace("(", "（").replace(
+                ")", "）")
+        else:
+            # 文本要检查是否重名
+            file_name = l13_like_share_tag.filename_check(title + ".txt", article, arthicle_path, "txt")
+
+        # 写入
+        with open(arthicle_path + "/" + file_name, "w", encoding="utf-8") as op:
             op.write(article)
-        print("{} by {} 保存完毕".format(print_title, author_name))
+        print("{}  保存完毕".format(file_name))
 
 
-def save_chapter(article_infos, target_titles, author_name, author_ip):
-    print("准备开始保存文章")
-    arthicle_path = "./dir/article/{}".format(author_name)
-    test_info = article_infos[target_titles[0]][0]
-    test_parse = get_parse(test_info["url"])
-    test_title = test_info["title"]
-    template_id = parse_template.matcher(test_parse, test_title)
-    print("文字匹配模板为模板{}".format(template_id))
-    if template_id == 0:
-        print("文字匹配模板是根据作者主页自动匹配的，模板0是一个匹配度比较广的模板，使用模板0说明没有其他的模板匹配成功，除了文章主体之外可能会爬到一些其他的内容，也有可能出现文章部分内容缺失")
-        str = input("输入ok确定继续爬取，或输入任意其他文字退出\n")
-        if not str == "ok":
-            exit()
-
-    for target_title in target_titles:
-        chapters_info = article_infos[target_title]
-        print_target_title = target_title.encode("gbk",errors="replace").decode("gbk",errors="replace")
-        print("开始保存 {}，第一章节链接 {}".format(print_target_title, chapters_info[0]["url"]))
-        file_name = target_title + " by " + author_name
-        file_name = file_name.replace("/", "&").replace("|", "&").replace("\\", "&").replace("<", "《") \
-            .replace(">", "》").replace(":", "：").replace('"', '”').replace("?", "？").replace("*", "·"). \
-            replace("\n", "").replace("(", "（").replace(
-            ")", "）")
-        article_head = file_name + "[" + author_ip + "]\n第一章节发表时间：{}".format(
-            chapters_info[0]["time"]) + "\n最后章节发表时间：{}".format(chapters_info[-1]["time"]) + "\n\n"
-        article_content = article_head
-        num = 1
-        for chapter_info in chapters_info:
-            chapter_parse = get_parse(chapter_info["url"])
-            chapter_content = "\n第{}章\n".format(num) + parse_template.get_content(chapter_parse, template_id,
-                                                                                  chapter_info["title"]) + "\n\n"
-            chapter_content = chapter_content.replace("                              ", "")
-            article_content += chapter_content
-            print("保存进度{}/{}".format(num, len(chapters_info)))
-            num += 1
-
-        with open(arthicle_path + "/" + file_name + ".txt", "w", encoding="utf-8") as op:
-            op.write(article_content)
-        print("{} 保存完成\n".format(print_target_title))
-
-
-def run(author_url, start_time, end_time, target_titles, merger_chapter):
+def run(author_url, start_time, end_time):
     author_page_parse = etree.HTML(
         requests.get(author_url, headers=useragentutil.get_headers()).content.decode("utf-8"))
     # id是是获取归档页面需要的一个参数，纯数字；ip是作者在lofter的三级域名，由作者注册时设定
@@ -214,6 +174,7 @@ def run(author_url, start_time, end_time, target_titles, merger_chapter):
         author_name = author_page_parse.xpath("//title//text()")[0]
     except:
         author_name = input("解析作者名时出现异常，请手动输入\n")
+    # 归档页链接
     archive_url = author_url + "dwr/call/plaincall/ArchiveBean.getArchivePostByTime.dwr"
 
     query_num = 50
@@ -224,26 +185,25 @@ def run(author_url, start_time, end_time, target_titles, merger_chapter):
     path = "./dir/article"
     arthicle_path = "./dir/article/{}".format(author_name)
 
-    blog_infos = parse_archive_page(archive_url, head, data, author_url, query_num, start_time, end_time, target_titles,
-                                    merger_chapter)
+    # 博客信息爬取
+    blog_infos = parse_archive_page(archive_url, head, data, author_url, author_name, query_num, start_time, end_time)
+
     if not blog_infos:
-        print("作者主页中无带标题的博客，无需爬取，程序退出")
+        print("作者主页中无文本/文字博客，无需爬取，程序退出")
         exit()
+
     for x in [path, arthicle_path]:
         if not os.path.exists(x):
             os.makedirs(x)
-    if target_titles and merger_chapter:
-        save_chapter(blog_infos, target_titles, author_name, author_ip)
 
-    else:
-        save_file(blog_infos, author_name, author_ip)
-        # print("end")
+    save_file(blog_infos, author_name, author_ip)
+    # print("end")
     print("运行结束")
 
 
 if __name__ == '__main__':
     # 作者的主页地址   示例 https://ishtartang.lofter.com/   *最后的'/'不能少
-    author_url = "https://ururu293.lofter.com/"
+    author_url = "https://audex.lofter.com/"
 
     # ### 自定义部分 ### #
 
@@ -251,12 +211,4 @@ if __name__ == '__main__':
     start_time = ""
     end_time = ""
 
-    # 文章标题指定：只爬取标题标题包含指定内容的文章，适用于爬取系列文或多章节文章，空值为不指定。
-    # target_titles = ["山谷情人","玫瑰交易"]
-    target_titles = []
-
-    # 章节合并：指定文章标题时该功能生效，开启后爬取多章节文章时会按标题自动合并文章。0为关闭，1为启动。
-    # 注意，如果开启章节合并，文件名会使用你在标题指定中写的名称
-    merger_chapter = 0
-
-    run(author_url, start_time, end_time, target_titles, merger_chapter)
+    run(author_url, start_time, end_time)
