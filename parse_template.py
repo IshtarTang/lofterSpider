@@ -1,7 +1,3 @@
-from lxml.html import fromstring, tostring
-from html.parser import HTMLParser
-from lxml.html import etree
-
 """
 //div[@class="content"]			基本版		有标题	http://yangliu12.lofter.com/post/30ee0643_1c98d95fa
 //div[@class="cont"]/div[@class="text"]	作者头像在上	有标题	http://sxhyl.lofter.com/post/1e77aca2_1c6d7acdc
@@ -28,18 +24,20 @@ from lxml.html import etree
 
 
 # 通用模板，会爬到些别的
-def all_purpose_template(parse, title):
+def all_purpose_template(parse, title, blog_type):
     lines = parse.xpath('/html//text()')
     content = "".join(lines)
-    title = title.encode("gbk", errors="replace").decode("gbk", errors="replace").replace("?", "")
-    open("test.html", "w", encoding="utf-8").write(etree.tostring(parse,encoding='utf-8').decode("utf-8"))
-    content = content.split(title, 2)[2].split("评论")[0].encode("utf-8",errors="replace").decode("utf-8",errors="replace")
+    if blog_type == "article":
+        title = title.encode("gbk", errors="replace").decode("gbk", errors="replace").replace("?", "")
+        content = content.split(title, 2)[2].split("评论")[0].encode("utf-8", errors="replace").decode("utf-8",
+                                                                                                     errors="replace")
+    else:
+        content = content.split("评论")[0].encode("utf-8", errors="replace").decode("utf-8", errors="replace")
     return content
 
 
 # 模板1 lofter初始模板 http://yangliu12.lofter.com 有标题
 def template1(parse):
-    # line = parse.xpath('//div[@class="content"]//p//text()')
     lines = parse.xpath('//div[@class="content"]/div[@class="text"]//text()')
     content = "".join(lines)
     return content
@@ -98,7 +96,7 @@ def matcher(parse):
     return template_id
 
 
-def get_content(parse, template_id, title):
+def get_content(parse, template_id, title, blog_type):
     content = ""
     if template_id == 1:
         content = template1(parse)
@@ -116,7 +114,7 @@ def get_content(parse, template_id, title):
     if template_id == 6:
         content = template6(parse)
     if template_id == 0:
-        content = all_purpose_template(parse, title)
+        content = all_purpose_template(parse, title, blog_type)
         content = content.replace("    ", "").replace("\t", "")
     content = content.strip()
     return content
