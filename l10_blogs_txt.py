@@ -84,7 +84,7 @@ def save_files(blogs_urls):
             replace("\n", "").replace("(", "（").replace(
             ")", "）")
         print("准备保存：{} by {}，原文连接： {} ".format(title, author_name, blog_url))
-        template_id = parse_template.matcher(parse, title)
+        template_id = parse_template.matcher(parse)
         print("文字匹配模板为模板{}".format(template_id))
         if template_id == 0:
             print("文字匹配模板是根据作者主页自动匹配的，模板0为通用匹配模板，除了文章主体之外可能会爬到一些其他的内容，也有可能出现文章部分内容缺失")
