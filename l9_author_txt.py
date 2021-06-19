@@ -116,6 +116,7 @@ def save_file(blog_infos, author_name, author_ip):
         print_title = blog_info["print_title"]
         public_time = blog_info["time"]
         url = blog_info["url"]
+        blog_type = blog_info["blog_type"]
         print("准备保存：{} ，原文连接： {} ".format(print_title, url), end="    ")
 
         # 文件头
@@ -125,7 +126,7 @@ def save_file(blog_infos, author_name, author_ip):
             article_head = "{}[{}]\n原文链接： {}".format(title, author_ip, url)
         # 正文
         parse = get_parse(url)
-        article_content = parse_template.get_content(parse, template_id, title)
+        article_content = parse_template.get_content(parse, template_id, title, blog_type)
 
         # 文件尾，文章中插的图片
         # 匹配新格式
@@ -203,7 +204,7 @@ def run(author_url, start_time, end_time):
 
 if __name__ == '__main__':
     # 作者的主页地址   示例 https://ishtartang.lofter.com/   *最后的'/'不能少
-    author_url = "https://audex.lofter.com/"
+    author_url = "https://lofterxms.lofter.com/"
 
     # ### 自定义部分 ### #
 
