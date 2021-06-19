@@ -5,7 +5,6 @@ import time
 import random
 import os
 from lxml.html import etree
-import l8_blogs_img
 import parse_template
 import l4_author_img
 
@@ -77,8 +76,12 @@ def save_files(blogs_urls):
         parse = get_parse(blog_url)
         time_and_title = get_time_and_title(blog_url, author_page_parse)
         title = time_and_title[1]
+        blog_type = "article" if title else "text"
         article_head = "{} by {}[{}]\n发表时间：{}".format(title, author_name, author_ip, time_and_title[0])+"\n"+"原文链接： "+blog_url
-        file_name = title + " by " + author_name + ".txt"
+        if title:
+            file_name = title + " by " + author_name + ".txt"
+        else:
+            file_name = author_name+" "+time_and_title[0]+".txt"
         file_name = file_name.replace("/", "&").replace("|", "&").replace("\\", "&").replace("<", "《") \
             .replace(">", "》").replace(":", "：").replace('"', '”').replace("?", "？").replace("*", "·"). \
             replace("\n", "").replace("(", "（").replace(
@@ -88,7 +91,7 @@ def save_files(blogs_urls):
         print("文字匹配模板为模板{}".format(template_id))
         if template_id == 0:
             print("文字匹配模板是根据作者主页自动匹配的，模板0为通用匹配模板，除了文章主体之外可能会爬到一些其他的内容，也有可能出现文章部分内容缺失")
-        article_content = parse_template.get_content(parse, template_id, title)
+        article_content = parse_template.get_content(parse, template_id, title,blog_type)
         article = article_head + "\n\n\n\n" + article_content
         with open("./dir/article/this/{}".format(file_name), "w", encoding="utf-8") as op:
             op.write(article)
