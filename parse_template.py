@@ -81,7 +81,7 @@ def template6(parse):
     return contetn
 
 
-def matcher(parse, title):
+def matcher(parse):
     template_id = 0
     if template1(parse) != "":
         template_id = 1
