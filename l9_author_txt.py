@@ -123,20 +123,29 @@ def save_file(blog_infos, author_name, author_ip):
         if blog_info["blog_type"] == "article":
             article_head = "{} by {}[{}]\n发表时间：{}\n原文链接： {}".format(title, author_name, author_ip, public_time, url)
         else:
-            article_head = "{}[{}]\n原文链接： {}".format(title, author_ip, url)
+            article_head = "{}\n原文链接： {}".format(title, url)
         # 正文
-        parse = get_parse(url)
+        content = requests.get(url, headers=useragentutil.get_headers()).content
+        parse = etree.HTML(content)
         article_content = parse_template.get_content(parse, template_id, title, blog_type)
 
         # 文件尾，文章中插的图片
         # 匹配新格式
-        img_src = parse.xpath("//img/@src")
-        tmp_str = "\n".join(img_src)
+
+        illustration = re.findall('"(http[s]{0,1}://imglf\d{0,1}.lf\d*.[0-9]{0,3}.net.*?)"', content.decode("utf-8"))
+
+        # 过滤后为空说明没有获取到有效图片
+        if not l4_author_img.img_fliter(illustration, blog_type):
+            illustration = re.findall('"(http[s]{0,1}://imglf\d.nosdn\d*.[0-9]{0,3}\d.net.*?)"',
+                                      content.decode("utf-8"))
+        illustration = l4_author_img.img_fliter(illustration, blog_type)
+        '''
         illustration = re.findall('(http[s]{0,1}://imglf\d{0,1}.lf\d*.[0-9]{0,3}.net.*?)\?', tmp_str)
         if illustration == []:
             # 匹配旧格式
             illustration = re.findall('"(http[s]{0,1}://imglf\d{0,1}.nosdn\d*.[0-9]{0,3}.net.*?)\?',
                                       "\n".join(img_src))
+        '''
         if illustration:
             article_tail = "博客中包含的图片：\n" + "\n".join(illustration)
         else:
@@ -204,7 +213,7 @@ def run(author_url, start_time, end_time):
 
 if __name__ == '__main__':
     # 作者的主页地址   示例 https://ishtartang.lofter.com/   *最后的'/'不能少
-    author_url = "https://lofterxms.lofter.com/"
+    author_url = "https://audex.lofter.com/"
 
     # ### 自定义部分 ### #
 
