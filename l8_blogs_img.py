@@ -68,13 +68,15 @@ def parse_blogs_info(blogs_urls):
         public_time = get_time(blog_url, author_page_parse)
 
         # 不同作者主页会有不同页面结构，所以没有使用xpath而是直接用正则匹配出所有的图片链接
-        imgs_url = re.findall('"(http[s]{0,1}://imglf\d{0,1}.nosdn\d*.[0-9]{0,3}.net.*?)"', content)
+        # imgs_url = re.findall('"(http[s]{0,1}://imglf\d{0,1}.nosdn\d*.[0-9]{0,3}.net.*?)"', content)
+        imgs_url = re.findall('"(http[s]{0,1}://imglf\d{0,1}.lf\d*.[0-9]{0,3}.net.*?)"', content)
+
         # 图片文件下标接上次的增加
         img_index = 0
         blog_num += 1
 
         # 过滤博客页面中获取到的图片链接
-        imgs_url = l4_author_img.img_fliter(imgs_url)
+        imgs_url = l4_author_img.img_fliter(imgs_url, "img")
         print(imgs_url)
 
         # 整理图片信息，用于下一步保存
