@@ -101,12 +101,17 @@ def is_stamp_late(timestamp, end_time):
         return False
 
 
-def img_fliter(imgs_url):
+def img_fliter(imgs_url, blog_type):
     fliterd_imgs_url = []
     for img_url in imgs_url:
         # 按链接格式过滤掉头像图片和推荐图片
-        if "16y16" in img_url or "&amp;" in img_url or "64x64" in img_url or "16x16" in img_url:
-            continue
+        # blog_type目前有3种，img、text、article，img的图片链接需要过滤掉有"&amp"的，text和article不用
+        if blog_type == "img":
+            if "16y16" in img_url or "&amp;" in img_url or "64x64" in img_url or "16x16" in img_url:
+                continue
+        else:
+            if "16y16" in img_url or "64x64" in img_url or "16x16" in img_url:
+                continue
         # 删除图片链接中的大小参数，获取时会默认最高画质
         img_url = img_url.split("imageView")[0]
         # img_url = re.sub(r"imageView&thumbnail=\d*x\d*&quality=\d+&", "", img_url)
@@ -239,28 +244,21 @@ def parse_blogs_info(blogs_info, parsed_blogs_info, author_name, author_ip, targ
         # 不同作者主页会有不同页面结构，所以没有使用xpath而是直接用正则匹配出所有的图片链接，其中会包括一些评论头像和推荐图片
         # 大概9月前的图片链接格式是nosdn，9月之后是imglf
         # imgs_url = re.findall('"(http[s]{0,1}://imglf\d{0,1}.nosdn\d*.[0-9]{0,3}.net.*?)"', content)
+
         imgs_url = re.findall('"(http[s]{0,1}://imglf\d{0,1}.lf\d*.[0-9]{0,3}.net.*?)"', content)
 
         # 过滤后为空说明没有获取到有效图片
-        if not img_fliter(imgs_url):
+        if not img_fliter(imgs_url,"img"):
             print("使用旧正则表达式", end="\t")
-            imgs_url = re.findall('"(http[s]{0,1}://imglf\d.nosdn\d*.12\d.net.*?)"', content)
+            imgs_url = re.findall('"(http[s]{0,1}://imglf\d.nosdn\d*.[0-9]{0,3}\d.net.*?)"', content)
 
-        # 去除重复链接
-        filter_imgs_url = []
-        for img_url in imgs_url:
-            if img_url not in filter_imgs_url:
-                filter_imgs_url.append(img_url)
-        imgs_url = filter_imgs_url
-        # imgs_url = list(set(imgs_url))  # 转为set去重
+        # 过滤图片链接
+        imgs_url = img_fliter(imgs_url,"img")
 
         # 判断跟上一博客的发表日期是否相同，如果是的话文件下标接上次的增加
         img_index = 0
         if img_time == pre_page_last_img_info["last_file_time"]:
             img_index = pre_page_last_img_info["index"]
-
-        # 过滤图片链接
-        imgs_url = img_fliter(imgs_url)
 
         # 整理图片信息，用于下一步保存
         count = 0
@@ -414,7 +412,7 @@ def run(author_url, start_time, end_time, target_tags, tags_filter_mode, file_up
         print("作者名中有异常符号,无法显示,lofter ip %s,主页链接 %s" % (author_ip, author_url))
 
     if target_tags:
-        print("tag过滤已经打开，仅保存含有tag中包含%s的图片，"%(" ["+",".join(target_tags)+"] "),end="")
+        print("tag过滤已经打开，仅保存含有tag中包含%s的图片，" % (" [" + ",".join(target_tags) + "] "), end="")
         if tags_filter_mode == "in":
             print("没有tag的图片将会保留")
         else:
@@ -466,7 +464,7 @@ if __name__ == "__main__":
     # 作者在头像下放了tag，导致tag过滤失效，所有的内容都会被保存
 
     # 作者的主页地址   示例 https://ishtartang.lofter.com/   *最后的'/'不能少
-    author_url = "https://lofterxms.lofter.com/"
+    author_url = "https://miludrr.lofter.com/"
 
     # ### 自定义部分 ### #
 
