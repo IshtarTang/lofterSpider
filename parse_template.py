@@ -1,3 +1,5 @@
+import re
+
 """
 //div[@class="content"]			基本版		有标题	http://yangliu12.lofter.com/post/30ee0643_1c98d95fa
 //div[@class="cont"]/div[@class="text"]	作者头像在上	有标题	http://sxhyl.lofter.com/post/1e77aca2_1c6d7acdc
@@ -15,6 +17,7 @@
 
 //div[@class="content"]			作者头像在右	无标题	https://yujochen.lofter.com/post/1f9b2521_1c9936caa
 
+//div[contains(@class,'post-ctc box')]/p/text()  https://chuanshoot.lofter.com/
 
 """
 
@@ -29,8 +32,8 @@ def all_purpose_template(parse, title, blog_type):
     content = "".join(lines)
     if blog_type == "article":
         title = title.encode("gbk", errors="replace").decode("gbk", errors="replace").replace("?", "")
-        content = content.split(title, 2)[2].split("评论")[0].encode("utf-8", errors="replace").decode("utf-8",
-                                                                                                     errors="replace")
+        content = content.split(title, 2)[2]
+        content = re.split("\s评论\s", content)[0].encode("utf-8", errors="replace").decode("utf-8", errors="replace")
     else:
         content = content.split("评论")[0].encode("utf-8", errors="replace").decode("utf-8", errors="replace")
     return content
