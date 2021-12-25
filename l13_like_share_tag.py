@@ -7,6 +7,7 @@ import requests
 from urllib import parse
 from lxml.html import etree
 from requests.cookies import RequestsCookieJar
+import html2text
 
 import useragentutil
 
@@ -413,13 +414,7 @@ def infor_formater(fav_infos, fav_str, mode, file_path, start_time, min_hot, pri
         # 正文内容
         content_buf1 = re.search('s\d{1,5}.content="(.*?)";', x).group(1)
         parse = etree.HTML(content_buf1)
-        if content_buf1:
-            f = parse.xpath("//p/text()")
-            content_buf2 = "\n".join(f)
-            content = content_buf2.encode('latin-1').decode("unicode_escape", errors="ignore").strip()
-        else:
-            content = ""
-        blog_info["content"] = content
+        blog_info["content"] = html2text.html2text(content_buf1.encode('latin-1').decode("unicode_escape", errors="ignore"))
 
         # 文章中插的图片
         illustration = []
