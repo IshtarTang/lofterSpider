@@ -19,6 +19,7 @@ import re
 
 //div[contains(@class,'post-ctc box')]/p/text()  https://chuanshoot.lofter.com/
 
+
 """
 
 
@@ -81,6 +82,13 @@ def template6(parse):
     contetn = "\n\n".join(lines)
     return contetn
 
+# 7 https://chuanshoot.lofter.com/ 好像是自定义主页
+def template7(parse):
+    # lines = parse.xpath("//div[contains(@class,'post-ctc box')]/p/text()")
+    lines = parse.xpath("//div[contains(@class,'post-ctc box')]//p//text()")
+    content = "".join(lines)
+    return content
+
 
 def matcher(parse):
     template_id = 0
@@ -96,6 +104,8 @@ def matcher(parse):
         template_id = 5
     elif template6(parse) != "":
         template_id = 6
+    elif template7(parse) != "":
+        template_id = 7
     return template_id
 
 
@@ -116,6 +126,8 @@ def get_content(parse, template_id, title, blog_type):
         content = template5(parse)
     if template_id == 6:
         content = template6(parse)
+    if template_id == 7:
+        content = template7(parse)
     if template_id == 0:
         content = all_purpose_template(parse, title, blog_type)
         content = content.replace("    ", "").replace("\t", "")

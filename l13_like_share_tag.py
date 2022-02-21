@@ -4,10 +4,10 @@ import re
 import shutil
 import time
 import requests
+import html2text
 from urllib import parse
 from lxml.html import etree
 from requests.cookies import RequestsCookieJar
-import html2text
 
 import useragentutil
 
@@ -40,6 +40,11 @@ def write_img(file, filename, path):
 
 
 def get_logion_session(login_info):
+    """
+    获取一个登录过的session
+    :param login_info: 手机号，密码，登录授权码构成的子弟按
+    :return: session
+    """
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
                       "Chrome/79.0.3945.88 Safari/537.36",
@@ -68,15 +73,9 @@ def get_logion_session(login_info):
 
     logion_url = "https://www.lofter.com/lpt/login.do"
 
-    # 登录操作
-    # login_response = sesseion.get(logion_url, params=logion_payload)
-    # print(login_response.content.decode("utf-8"))
-
     # 主页参数设置
     homepage_url = "http://www.lofter.com/"
     cookies = RequestsCookieJar()
-    # cookies.set("LOFTER-PHONE-LOGINNUM" , "18975585675")
-    # cookies.set("LOFTER-PHONE-LOGIN-FLAG","1")
     cookies.set("LOFTER-PHONE-LOGIN-AUTH",
                 login_info["login auth"])
     session.cookies = cookies
@@ -93,7 +92,7 @@ def make_data(mode, url=""):
     """
     :param mode: 模式，支持的模式有share like1 like2 tag
     :param url:  生成data需要用到url，share like1 需要的是用户主页的url，tag需要的是tag页的url。like2不会用到，因为信息在cookies种
-    :return:
+    :return: 初始data
     """
     if (mode == "like1" or mode == "share" or mode == "tag") and url == "":
         print("{}模式生成data需要url参数".format(mode))
@@ -183,6 +182,7 @@ def make_header(mode, url=""):
 
 def update_data(mode, data, get_num, got_num, last_timestamp="0"):
     """
+    获取归档页时，每个请求都需要根据上次获取的内容更新data，才能成功获取到下一页的内容
     :param mode:    模式
     :param data:    原data
     :param get_num: 要获取的条数
@@ -210,6 +210,9 @@ def update_data(mode, data, get_num, got_num, last_timestamp="0"):
 
 
 def save_all_fav(url, mode, file_path, login_info, start_time):
+    # 获取所有博客信息，按条数切分
+
+    # 各种设置，不同模式使用不用链接
     real_got_num = 0
     got_num = 0
     get_num = 100
@@ -229,6 +232,7 @@ def save_all_fav(url, mode, file_path, login_info, start_time):
     else:
         print("requests_url 模式匹配错误 当前模式{}".format(mode))
         exit()
+    # like2需要登录的session,其他模式不用
     if mode == "like2":
         session = get_logion_session(login_info)
     else:
@@ -241,6 +245,8 @@ def save_all_fav(url, mode, file_path, login_info, start_time):
         start_time_stamp = time.mktime(time.strptime(start_time, "%Y-%m-%d"))
     else:
         start_time_stamp = 0
+
+    # 开始获取归档页
     while True:
         print("正在获取{}-{}".format(got_num, got_num + get_num), end="\t")
         fav_response = session.post(requests_url, data=data)
@@ -256,7 +262,6 @@ def save_all_fav(url, mode, file_path, login_info, start_time):
         real_got_num += len(new_info)
         print("实际返回条数 {}".format(len(new_info)), end="\t")
 
-        # 长度为0说明已经到最后一页，或者被lofter发现了
         str1 = ""
         if mode == "like1" or mode == "like2":
             str1 = "我的喜欢页面"
@@ -264,9 +269,12 @@ def save_all_fav(url, mode, file_path, login_info, start_time):
             str1 = "我的推荐页面"
         elif mode == "tag":
             str1 = "tag页面"
+        """
+        调试中
+        """
 
+        # 长度为0说明已经到最后一页，或者被lofter发现了
         if len(new_info) == 0:
-            # if got_num >= 200:
             print("\n已获取到最后一页，{}信息获取完成".format(str1))
             break
 
@@ -303,9 +311,12 @@ def save_all_fav(url, mode, file_path, login_info, start_time):
         else:
             data = update_data(mode, data, get_num, got_num)
         print()
+
+    # 归档页出来了啥都没获取到
     if len(fav_info) == 0:
-        print("信息获取异常，请检查网络是否正常，模式与链接是否匹配，like2请检查登录信息是否有误，")
+        print("归档页获取异常，请检查网络是否正常，模式与链接是否匹配，like2请检查登录信息是否有误")
         exit()
+
     file = open(file_path + "/blogs_info", "w", encoding="utf-8")
     for info in fav_info:
         file.write(info.replace("\n", ""))
@@ -313,32 +324,34 @@ def save_all_fav(url, mode, file_path, login_info, start_time):
     print("总请求条数：{}  实际返回条数：{}".format(got_num, real_got_num))
 
 
-def infor_formater(fav_infos, fav_str, mode, file_path, start_time, min_hot, print_level):
+def infor_formater(favs_info, fav_str, mode, file_path, start_time, min_hot, print_level):
+    # 把字段从原文件中提取出来，大部分使用正则
+
     format_fav_info = []
     start_time_stamp = ""
     if start_time:
         start_time_stamp = time.mktime(time.strptime(start_time, "%Y-%m-%d"))
 
-    for x in fav_infos:
+    for fav_info in favs_info:
         blog_info = {}
         # 博客链接
         try:
-            url = re.search('s\d{1,5}.blogPageUrl="(.*?)"', x).group(1)
+            url = re.search('s\d{1,5}.blogPageUrl="(.*?)"', fav_info).group(1)
         except:
-            print("博客{} 信息丢失，跳过".format(fav_infos.index(x) + 1))
+            print("博客{} 信息丢失，跳过".format(favs_info.index(fav_info) + 1))
             continue
         blog_info["url"] = url
         if print_level:
-            print("博客{} {}准备解析".format(fav_infos.index(x) + 1, url), end="\t")
+            print("博客{} {}准备解析".format(favs_info.index(fav_info) + 1, url), end="\t")
 
         # 喜欢时间
-        fav_timestamp = re.search('s\d{1,5}.opTime=(.*?);', x).group(1)
+        fav_timestamp = re.search('s\d{1,5}.opTime=(.*?);', fav_info).group(1)
         # 模式为like2且早于设定时间则跳出整理
         if mode == "like2" and start_time:
             if int(fav_timestamp) / 1000 < start_time_stamp:
                 print("已将指定时间内的博客解析结束")
                 break
-        blog_hot = int(re.search('s\d{1,5}.hot=(.*?);', x).group(1))
+        blog_hot = int(re.search('s\d{1,5}.hot=(.*?);', fav_info).group(1))
         if mode == "tag" and blog_hot < min_hot:
             print("当前博客的热度小于设定热度，跳过")
             continue
@@ -347,17 +360,18 @@ def infor_formater(fav_infos, fav_str, mode, file_path, start_time, min_hot, pri
         blog_info["fav time"] = fav_time
 
         # 作者名
-        author_name_search = re.search('s\d{1,5}.blogNickName="(.*?)"', x)
+        author_name_search = re.search('s\d{1,5}.blogNickName="(.*?)"', fav_info)
 
         if author_name_search:
             author_name = author_name_search.group(1).encode('latin-1').decode('unicode_escape', errors="replace")
         # 正则没有匹配出来的话说明这一页的前面也有这个作者的博客，作者信息在前面，找到id再在前面搜索作者信息
         else:
-            info_id = re.search("s\d{1,5}.blogInfo=(s\d{1,5})", x).group(1)
+            info_id = re.search("s\d{1,5}.blogInfo=(s\d{1,5})", fav_info).group(1)
             test_names = re.findall(info_id + '.blogNickName="(.*?)"', fav_str.split('blogPageUrl="' + url + '"')[0])
             author_name = test_names[-1].encode('latin-1').decode('unicode_escape', errors="replace")
         blog_info["author name"] = author_name
-        # 文件中有不允许出现的字符，在用于文件名时要全部替换掉，英文括号换成中文括号，避免在检查文件名重复时被切割
+
+        # 文件中不允许出现的字符，在用于文件名时要全部替换掉，英文括号换成中文括号，避免在检查文件名重复时被切割
         author_name_in_filename = author_name.replace("/", "&").replace("|", "&").replace("\r", " ").replace(
             "\\", "&").replace("<", "《").replace(">", "》").replace(":", "：").replace('"', '”').replace("?", "？") \
             .replace("*", "·").replace("\n", "").replace("(", "（").replace(")", "）").strip()
@@ -366,12 +380,12 @@ def infor_formater(fav_infos, fav_str, mode, file_path, start_time, min_hot, pri
         author_ip = re.search("http[s]{0,1}://(.*?).lofter.com", url).group(1)
         blog_info["author ip"] = author_ip
         # 发表时间
-        public_timestamp = re.search('s\d{1,5}.publishTime=(.*?);', x).group(1)
+        public_timestamp = re.search('s\d{1,5}.publishTime=(.*?);', fav_info).group(1)
         time_local1 = time.localtime(int(int(public_timestamp) / 1000))
         public_time = time.strftime("%Y-%m-%d", time_local1)
         blog_info["public time"] = public_time
         # tags
-        tags = re.search('s\d{1,5}.tag[s]{0,1}="(.*?)";', x).group(1).strip().encode('utf-8').decode(
+        tags = re.search('s\d{1,5}.tag[s]{0,1}="(.*?)";', fav_info).group(1).strip().encode('utf-8').decode(
             'unicode_escape').split(",")
         if tags[0] == "":
             tags = []
@@ -383,8 +397,8 @@ def infor_formater(fav_infos, fav_str, mode, file_path, start_time, min_hot, pri
         blog_info["tags"] = lower_tags
         # 标题
         try:
-            title = re.search('s\d{1,5}.title="(.*?)"', x).group(1).encode('latin-1').decode('unicode_escape',
-                                                                                             errors="ignore ")
+            title = re.search('s\d{1,5}.title="(.*?)"', fav_info).group(1).encode('latin-1').decode('unicode_escape',
+                                                                                                    errors="ignore ")
         except:
             title = ""
         title_in_filename = title.replace("/", "&").replace("|", "&").replace("\r", " ").replace(
@@ -396,12 +410,12 @@ def infor_formater(fav_infos, fav_str, mode, file_path, start_time, min_hot, pri
 
         # 图片链接
         img_urls = []
-        urls_search = re.search('originPhotoLinks="(\[.*?\])"', x)
+        urls_search = re.search('originPhotoLinks="(\[.*?\])"', fav_info)
         if urls_search:
             urls_str = urls_search.group(1).replace("\\", "").replace("false", "False").replace("true", "True")
             urls_infos = eval(urls_str)
             for url_info in urls_infos:
-                # raw是没有任何后缀的原图，但有的没有raw
+                # raw是没有任何后缀的原图，但有的没有raw，取orign
                 try:
                     url = url_info["raw"]
                 except:
@@ -412,13 +426,22 @@ def infor_formater(fav_infos, fav_str, mode, file_path, start_time, min_hot, pri
         blog_info["img urls"] = img_urls
 
         # 正文内容
-        content_buf1 = re.search('s\d{1,5}.content="(.*?)";', x).group(1)
-        parse = etree.HTML(content_buf1)
-        blog_info["content"] = html2text.html2text(content_buf1.encode('latin-1').decode("unicode_escape", errors="ignore"))
+        tmp_content1 = re.search('s\d{1,5}.content="(.*?)";', fav_info).group(1)
+        parse = etree.HTML(tmp_content1)
+        # if tmp_content1:
+        #     f = parse.xpath("//p//text()")
+        #     tmp_content2 = "\n".join(f)
+        #     content = tmp_content2.encode('latin-1').decode("unicode_escape", errors="ignore").strip()
+        # else:
+        #     content = ""
+        # blog_info["content"] = content
+        content = html2text.html2text(tmp_content1.encode('latin-1').decode("unicode_escape", errors="ignore"))
+        blog_info["content"] = content
+
 
         # 文章中插的图片
         illustration = []
-        if content_buf1:
+        if tmp_content1:
             # 匹配新格式
             img_src = parse.xpath("//img/@src")
             illustration = re.findall('"(http[s]{0,1}://imglf\d{0,1}.lf\d*.[0-9]{0,3}.net.*?)\?', "\n".join(img_src))
@@ -430,7 +453,7 @@ def infor_formater(fav_infos, fav_str, mode, file_path, start_time, min_hot, pri
         blog_info["illustration"] = illustration
 
         # 外链
-        if content_buf1:
+        if tmp_content1:
             link_a = parse.xpath("//a/@href")
             external_link = list(map(lambda x: x.replace("\\", "").replace('"', ''), link_a))
         else:
@@ -442,12 +465,12 @@ def infor_formater(fav_infos, fav_str, mode, file_path, start_time, min_hot, pri
         l_cover = ""
         l_url = []
         l_img = []
-        long_article = re.search('s\d{1,5}.compositeContent="(.*?)";s\d{1,5}', x)
+        long_article = re.search('s\d{1,5}.compositeContent="(.*?)";s\d{1,5}', fav_info)
         if long_article:
             long_article1 = long_article.group(1)
             parse = etree.HTML(long_article.group(1))
             # .replace("\\", ""))
-            l_cover = re.search('s\d{1,5}.banner="(.*?)";', x).group(1)
+            l_cover = re.search('s\d{1,5}.banner="(.*?)";', fav_info).group(1)
             l_url = parse.xpath("//a//@href")
             l_url = list(map(lambda x: x.replace("\\", "").replace('"', ''), l_url))
             l_img = parse.xpath("//img/@src")
@@ -460,14 +483,16 @@ def infor_formater(fav_infos, fav_str, mode, file_path, start_time, min_hot, pri
         blog_info["long article img"] = l_img
         blog_info["long article cover"] = l_cover
 
+        # video_url_search = re.findall('"originUrl":""')
+
         # 整合后输出
         format_fav_info.append(blog_info)
         if print_level:
             print("解析完成，具体信息：\n{}".format(blog_info))
-            print("" + "----" * 20)
+            print("----" * 20)
         else:
-            if fav_infos.index(x) % 100 == 0 or len(format_fav_info) == len(fav_infos):
-                print("解析进度 {}/{}   正在解析的博客链接 {}".format(len(format_fav_info), len(fav_infos), blog_info["url"]))
+            if favs_info.index(fav_info) % 100 == 0 or len(format_fav_info) == len(favs_info):
+                print("解析进度 {}/{}   正在解析的博客链接 {}".format(len(format_fav_info), len(favs_info), blog_info["url"]))
     # 写入到文件
     with open(file_path + "/format_blogs_info.json", "w", encoding="utf-8", errors="ignore") as op:
         op.write(json.dumps(format_fav_info, ensure_ascii=False, indent=4))
@@ -551,7 +576,7 @@ def count_tag(blogs_info):
     return tag_count3
 
 
-# 获取文件尾
+# 获取文本尾
 def get_tail(blog_info):
     article_tail = ""
 
@@ -577,8 +602,8 @@ def filename_check(filename, file, path, file_type):
         # 如果文件内容跟要保存的内容相同,返回文件名
         if exist_file == file:
             return filename
-        num = 2
         # 如果文件内容跟要保存的内容不同,在文件名加后缀 (num)
+        num = 2
         while True:
             filename = filename.split("." + file_type)[0].split("(")[0] + "(" + str(num) + ")." + file_type
             # 检测新文件名是否也有已存在文件,存在则增加后缀中的数字,不存在则跳出循环,返回文件名
@@ -595,6 +620,7 @@ def filename_check(filename, file, path, file_type):
     return filename
 
 
+# 保存文章（带标题）
 def save_article(articles_info, file_path, classify_by_tag, prior_tags, agg_non_prior_tag, save_img_in_text,
                  print_level):
     # 在启用按tag分类时，先建立优先prior和other文件夹
@@ -615,8 +641,8 @@ def save_article(articles_info, file_path, classify_by_tag, prior_tags, agg_non_
         article = article_head + "\n\n\n" + article_info["content"] + "\n\n\n" + article_tail
         filename_title = article_info["title in filename"]
         filename = filename_title + " by " + article_info["author name in filename"] + ".txt"
-        # 提示输出
         count += 1
+        # 提示输出
         if print_level:
             try:
                 print(
@@ -683,6 +709,7 @@ def save_article(articles_info, file_path, classify_by_tag, prior_tags, agg_non_
                 print("保存完成")
 
 
+# 保存文本（不带标题）
 def save_text(texts_info, file_path, save_img_in_text):
     if not os.path.exists(file_path + "/text"):
         os.makedirs(file_path + "/text")
@@ -727,6 +754,7 @@ def save_text(texts_info, file_path, save_img_in_text):
             print("保存完成")
 
 
+# 保存长文章
 def save_long_article(long_articles_info, file_path, save_img_in_text):
     if not os.path.exists(file_path + "/long article"):
         os.makedirs(file_path + "/long article")
@@ -887,6 +915,10 @@ def run(url, mode, save_mode, classify_by_tag, prior_tags, agg_non_prior_tag, lo
         tag = re.search("http[s]{0,1}://www.lofter.com/tag/(.*?)/.*", url).group(1)
         tag = parse.unquote(tag)
         file_path = tag_file_path + "/" + tag
+    else:
+        print("模式只能为 share、like1、like2或tag")
+        exit()
+
     if not os.path.exists(file_path):
         os.makedirs(file_path)
 
@@ -939,6 +971,7 @@ def run(url, mode, save_mode, classify_by_tag, prior_tags, agg_non_prior_tag, lo
         fav_info = fav_info[0:-1]
 
         print("\n开始解析")
+
         infor_formater(fav_info, fav_str, mode, file_path, start_time, min_hot, print_level)
         step1_finish_time = time.time()
         print("解析完成")
@@ -960,9 +993,10 @@ def run(url, mode, save_mode, classify_by_tag, prior_tags, agg_non_prior_tag, lo
         print("阶段2完成，耗时 {} 秒".format(step2_finish_time - step2_start_time))
     else:
         print("阶段2在之前的运行中已完成")
+
     classified_blogs = json.loads(open(file_path + "/classified_blogs_info.json", "r", encoding="utf-8").read())
 
-    # 3
+    # 3 对博客类型和tag进行统计
     # types = ["img", "article", "text", "long article"]
     types_str = {"img": "图片博客", "article": "文章博客（带标题）", "text": "文字博客（无标题）", "long article": "长文章",
                  "all": "全部博客"}
@@ -1009,10 +1043,11 @@ def run(url, mode, save_mode, classify_by_tag, prior_tags, agg_non_prior_tag, lo
         exit()
     print("====================" * 20 + "\n进入保存阶段")
 
-    # 阶段4
+    # 阶段4 保存文件
+    # 保存文章
     if save_mode["article"]:
         print("\n\n------------开始保存文章------------")
-        # 删除并重建文件夹
+        # 如果文章文件夹已经存在，重新开始保存，删除并重建文件夹
         if os.path.exists(file_path + "/article"):
             print("删除上次运行保存的文章")
             shutil.rmtree(file_path + "/article")
@@ -1022,6 +1057,7 @@ def run(url, mode, save_mode, classify_by_tag, prior_tags, agg_non_prior_tag, lo
                          agg_non_prior_tag, save_img_in_text, print_level)
         else:
             print("无文章")
+    # 保存文本
     if save_mode["text"]:
         print("\n\n------------开始保存文本-----------")
         if os.path.exists(file_path + "/text"):
@@ -1032,6 +1068,7 @@ def run(url, mode, save_mode, classify_by_tag, prior_tags, agg_non_prior_tag, lo
             save_text(classified_blogs["text"], file_path, save_img_in_text)
         else:
             print("无文本")
+    # 保存长文章
     if save_mode["long article"]:
         print("\n\n------------开始保存长文章------------")
         if os.path.exists(file_path + "/long article"):
@@ -1042,7 +1079,8 @@ def run(url, mode, save_mode, classify_by_tag, prior_tags, agg_non_prior_tag, lo
             save_long_article(classified_blogs["long article"], file_path, save_img_in_text)
         else:
             print("无长文章")
-    # 阶段4
+
+    # 保存图片
     auto_sort_setting = {"按tag分类": classify_by_tag, "优先tag": prior_tags,
                          "非优先tag聚合": agg_non_prior_tag}
     step3_start_time = time.time()
@@ -1064,7 +1102,9 @@ def run(url, mode, save_mode, classify_by_tag, prior_tags, agg_non_prior_tag, lo
                  agg_non_prior_tag, print_level)
         print("所有图片保存完成")
     step3_finish_time = time.time()
-    print("本次运行中阶段3耗时 {} 分钟".format(round((step3_finish_time - step3_start_time) / 60), 2))
+    print("本次运行中保存耗时 {} 分钟".format(round((step3_finish_time - step3_start_time) / 60), 2))
+
+    # 运行结束，退出
     while 1:
         str1 = input("本次运行已结束，输入 yes 以删除进度文件以重置整个程序，或输入 no 退出\n")
         file_list = []

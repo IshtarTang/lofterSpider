@@ -1,5 +1,6 @@
 import re
 import os
+import shutil
 import time
 import random
 import requests
@@ -8,6 +9,9 @@ import useragentutil
 import parse_template
 import l4_author_img
 import l13_like_share_tag
+import numpy as np
+from collections import Counter
+import traceback
 
 session = requests.session()
 
@@ -55,22 +59,25 @@ def parse_archive_page(url, header, data, author_url, author_name, query_num, st
         blog_info_dic = {}
         blog_num += 1
 
+        # 博客的编号 比如https://lindujiu.lofter.com/post/423a9c_1c878d5e6 的 423a9c_1c878d5e6
+        blog_index = re.search(r's[\d]*.permalink="(.*?)";', blog_info).group(1)
+        blog_info_dic["url"] = author_url + "post/" + blog_index
+
         # 获取标题
         title = ""
-        # 获取标题，纯文本博客会获取一个空标题，图片博客没有标题
-        re_title = re.findall(r'[\d]*\.title="(.*?)"', blog_info)
-        re_content = re.findall(r'[\d]*\.content="(.*?)"', blog_info)
+        # 获取标题，纯文本博客会获取一个空标题，图片博客没有标题，确认文本有效后弄个临时标题（这里的文本内容并不会用到后面）
+        re_title = re.findall(r'[\d]*\.title="(.*?)";', blog_info)
+        re_content = re.findall(r'[\d]*\.content="(.*?)";', blog_info)
         # 这个判断总觉得有点问题
         if re_title and re_title[0]:
             title = re_title[0].encode('latin-1').decode('unicode_escape')
             blog_info_dic["blog_type"] = "article"
         elif re_content:
             # 没有标题的纯文本信息，先弄一个临时title
-            title = "tmp_title"
             blog_info_dic["blog_type"] = "text"
-
-        # 没有title就直接跳过后面的解析
-        if not title:
+            title = "tmp_title"
+        else:
+            # 没有title就直接跳过后面的解析
             continue
 
         # 博客的编号 比如https://lindujiu.lofter.com/post/423a9c_1c878d5e6 的 423a9c_1c878d5e6
@@ -96,6 +103,7 @@ def parse_archive_page(url, header, data, author_url, author_name, query_num, st
 
 
 def save_file(blog_infos, author_name, author_ip):
+    all_file_name = []
     print("开始保存文章内容")
     # 拿一篇出来，测试匹配模板
     first_parse = get_parse(blog_infos[0]["url"])
@@ -162,7 +170,7 @@ def save_file(blog_infos, author_name, author_ip):
             file_name = file_name.replace("/", "&").replace("|", "&").replace("\\", "&").replace("<", "《") \
                 .replace(">", "》").replace(":", "：").replace('"', '”').replace("?", "？").replace("*", "·"). \
                 replace("\n", "").replace("(", "（").replace(
-                ")", "）")
+                ")", "）").replace(",", "，")
         else:
             # 文本要检查是否重名
             file_name = l13_like_share_tag.filename_check(title + ".txt", article, arthicle_path, "txt")
@@ -170,10 +178,12 @@ def save_file(blog_infos, author_name, author_ip):
         # 写入
         with open(arthicle_path + "/" + file_name, "w", encoding="utf-8") as op:
             op.write(article)
-        print("{}  保存完毕".format(file_name))
+        print("{}  保存完毕".format(print_title))
+        all_file_name.append(file_name)
+    return all_file_name
 
 
-def run(author_url, start_time, end_time):
+def run(author_url, start_time, end_time, merge_titles, additional_chapter_index):
     author_page_parse = etree.HTML(
         requests.get(author_url, headers=useragentutil.get_headers()).content.decode("utf-8"))
     # id是是获取归档页面需要的一个参数，纯数字；ip是作者在lofter的三级域名，由作者注册时设定
@@ -205,20 +215,170 @@ def run(author_url, start_time, end_time):
     for x in [path, arthicle_path]:
         if not os.path.exists(x):
             os.makedirs(x)
+    all_file_name = save_file(blog_infos, author_name, author_ip)
+    all_file_name.reverse()
+    print("保存完毕")
+    if merge_titles:
+        merge_chapter(merge_titles, arthicle_path, additional_chapter_index, all_file_name)
 
-    save_file(blog_infos, author_name, author_ip)
-    # print("end")
-    print("运行结束")
+
+def merge_chapter(merge_titles, file_path, additional_chapter_index, all_file_names):
+    """
+    章节合并版本3
+    :param merge_titles: 要合并的标题
+    :param file_path: 文件路径
+    :param additional_chapter_index: 额外章节序号
+    :param all_file_names: 作者归档页的所有文件名，按时间顺序的
+    :return:
+    """
+    print("开始章节合并")
+    merge_path = file_path + "/merge_file"
+    origin_path = file_path + "/origin_file"
+    for x in [merge_path, origin_path]:
+        if not os.path.exists(x):
+            os.makedirs(x)
+    author_name = all_file_names[0].split("by ")[1].split(".txt")[0]
+
+    all_move_filename = set()
+    for merge_title in merge_titles:
+        chapter_names = []
+        for filename in all_file_names:
+            if merge_title in filename:
+                chapter_names.append(filename)
+                all_move_filename.add(filename)
+
+        result = ""
+        chapter_index = 1
+        for chapter in chapter_names:
+            with open(file_path + "/" + chapter, "r", encoding="utf-8") as op:
+                file1 = op.read()
+            if additional_chapter_index:
+                result += "第{}章\n".format(chapter_index)
+                chapter_index += 1
+            result = result + file1 + "\n\n"
+        with open(merge_path + "/" + merge_title + " by " + author_name + ".txt", "w", encoding="utf-8") as op:
+            op.write(result)
+
+        print("{} 共 {} 章，合并完成".format(merge_title, len(chapter_names)))
+        try:
+            chapter_names = [x.split("by")[0] for x in chapter_names]
+            print("包括文件{}".format(chapter_names))
+        except:
+            print("包括文件： [文件名中含特殊字符，无法输出]")
+        print("")
+
+    for filename in all_move_filename:
+        shutil.move(file_path + "/" + filename, origin_path + "/" + filename)
+    print("章节合并结束，合并后的文件位于{}，源文件已移动到{}".format(merge_path, origin_path))
+
+
+def merge_chapter_al(merge_titles, file_path, additional_chapter_index):
+    """
+    章节合并版本2，比版本3麻烦点，日期重复的需要手动排序，但是它可以不经过下载单独调用（不需要all_file_names），所以留着，说不定以后会有用
+    :param merge_titles: 要合并的标题
+    :param file_path: 文件路径
+    :param additional_chapter_index: 额外章节序号
+    :return:
+    """
+    print("开始章节合并")
+    merge_path = file_path + "/merge_file"
+    origin_path = file_path + "/origin_file"
+    for x in [merge_path, origin_path]:
+        if not os.path.exists(x):
+            os.makedirs(x)
+    files = os.listdir(file_path)
+    author_name = files[0].split("by ")[1].split(".txt")[0]
+
+    title_dict = {}
+    # 先找出来
+    for merge_title in merge_titles:
+        title_dict[merge_title] = []
+        for file_name in files:
+            if merge_title in file_name:
+                title_dict[merge_title].append(file_name)
+    # 获取发表时间
+    for title, filenames in title_dict.items():
+        public_timestamps = []
+        for filename in filenames:
+            with open(file_path + "/" + filename, "r", encoding="utf-8") as op:
+                op.readline()
+                public_time = op.readline().strip().split("：")[1]
+            public_timestamp = time.mktime(time.strptime(public_time, "%Y-%m-%d"))
+            public_timestamps.append(public_timestamp)
+
+        # 日期重复的手动排序
+        time_count = dict(Counter(public_timestamps))
+        # 找到重复元素
+        duplication_times = [key for key, value in time_count.items() if value > 1]
+        if duplication_times:
+            np_time = np.array(public_timestamps)
+            for duplication_time in duplication_times:
+                duplication_indexs = np.where(np_time == duplication_time)[0]
+                tmp_titles = [filenames[index] for index in duplication_indexs]
+
+                # 手动输入顺序
+                while True:
+                    str1 = input(
+                        "以下章节日期重复，需手动排序：\n{}\n请按你认为正确的顺序输入文件名，文件名间用英文逗号分割，完成后回车，注意不要输入多余空格\n".format(
+                            "\n".join(tmp_titles)))
+                    sort_titles = str1.split(",")
+                    if len(sort_titles) == len(tmp_titles):
+                        try:
+                            [filenames.index(title) for title in sort_titles]
+                        except:
+                            print("输入有误，请重新输入")
+                            continue
+                        break
+                    else:
+                        print("输入有误，请重新输入")
+                a = 0
+                for sort_title in sort_titles:
+                    public_timestamps[filenames.index(sort_title)] += a
+                    a += 1
+
+        publictime_and_title = dict(zip(public_timestamps, filenames))
+        sort_publictime_and_title = sorted(publictime_and_title.items(), key=lambda x: x[0])
+        print(sort_publictime_and_title)
+
+        result = ""
+        chapter_index = 1
+        for public_time, filename in sort_publictime_and_title:
+            with open(file_path + "/" + filename, "r", encoding="utf-8") as op:
+                file1 = op.read()
+            if additional_chapter_index:
+                result += "第{}章\n".format(chapter_index)
+                chapter_index += 1
+            result = result + file1 + "\n\n"
+
+            shutil.move(file_path + "/" + filename, origin_path + "/" + filename)
+
+            with open(merge_path + "/" + title + " by " + author_name + ".txt", "w", encoding="utf-8") as op:
+                op.write(result)
+            print("{} 共 {} 章，合并完成".format(title, len(sort_publictime_and_title)))
+            try:
+                filenames = [filename.split("by")[0] for filename in dict(sort_publictime_and_title).values()]
+                print("包括文件{}".format(filenames))
+            except:
+                print("包括文件： [文件名中含特殊字符，无法输出]")
+            print("")
+        print("章节合并结束，合并后的文件位于{}，源文件已移动到{}".format(merge_path, origin_path))
 
 
 if __name__ == '__main__':
     # 作者的主页地址   示例 https://ishtartang.lofter.com/   *最后的'/'不能少
-    author_url = "https://audex.lofter.com/"
+    author_url = "https://2368962587.lofter.com/"
 
     # ### 自定义部分 ### #
 
-    # 设定爬取哪个时间段的博客，空值为不设定 格式："yyyy-MM-dd"
+    # 设定爬取哪个时间段的博客，空值为不设定 格式："yyyy-MM-dd" 例："2020-05-01"
     start_time = ""
     end_time = ""
 
-    run(author_url, start_time, end_time)
+    # 章节合并：标题包含指定内容会自动合并，合并后会使用你写的标题作为文件名，空值为不合并
+    # 例： chapter_merge_title = ["罐头厂爱情故事", "核城公园", "来日方长", "春山无尽", "乌拉尔的花楸树"]
+    chapter_merge_title = ["快来把你家祖宗拿走","世界树","逆命记"]
+    # 额外章节序号: 在每章前加入"第n章"，方便一些阅读软件自动分章（只是单纯的按顺序标号，并不能自动判断原标题是第几章）
+    # 1启动，0关闭，chapter_merge_title为空时无效
+    additional_chapter_index = 1
+
+    run(author_url, start_time, end_time, chapter_merge_title, additional_chapter_index)

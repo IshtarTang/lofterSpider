@@ -106,18 +106,26 @@ def img_fliter(imgs_url, blog_type):
     for img_url in imgs_url:
         # 按链接格式过滤掉头像图片和推荐图片
         # blog_type目前有3种，img、text、article，img的图片链接需要过滤掉有"&amp"的，text和article不用
-        if blog_type == "img":
-            if "16y16" in img_url or "&amp;" in img_url or "64x64" in img_url or "16x16" in img_url:
+        # &amp匹配逻辑应该可以简化，但是没空找样本来测试，先放着；text和article的amp匹配可能会出问题
+        if "&amp;" in img_url:
+            if blog_type == "img":
                 continue
-        else:
-            if "16y16" in img_url or "64x64" in img_url or "16x16" in img_url:
-                continue
+            else:
+                re_amp = re.search("\d\d&amp", img_url)
+                if re_amp:
+                    continue
+        re_url = re.search("[1649]{2}[x,y][1649]{2}", img_url)
+        if re_url:
+            continue
+        # if "16y16" in img_url or "64x64" in img_url or "16x16" in img_url or "96x96" in img_url:
+        #     continue
+
         # 删除图片链接中的大小参数，获取时会默认最高画质
         img_url = img_url.split("imageView")[0]
-        # img_url = re.sub(r"imageView&thumbnail=\d*x\d*&quality=\d+&", "", img_url)
         # 去重
         if img_url not in fliterd_imgs_url:
             fliterd_imgs_url.append(img_url)
+        print("", end="")  # 这行是打断点用的
     return fliterd_imgs_url
 
 
@@ -248,12 +256,12 @@ def parse_blogs_info(blogs_info, parsed_blogs_info, author_name, author_ip, targ
         imgs_url = re.findall('"(http[s]{0,1}://imglf\d{0,1}.lf\d*.[0-9]{0,3}.net.*?)"', content)
 
         # 过滤后为空说明没有获取到有效图片
-        if not img_fliter(imgs_url,"img"):
+        if not img_fliter(imgs_url, "img"):
             print("使用旧正则表达式", end="\t")
             imgs_url = re.findall('"(http[s]{0,1}://imglf\d.nosdn\d*.[0-9]{0,3}\d.net.*?)"', content)
 
         # 过滤图片链接
-        imgs_url = img_fliter(imgs_url,"img")
+        imgs_url = img_fliter(imgs_url, "img")
 
         # 判断跟上一博客的发表日期是否相同，如果是的话文件下标接上次的增加
         img_index = 0
@@ -464,7 +472,7 @@ if __name__ == "__main__":
     # 作者在头像下放了tag，导致tag过滤失效，所有的内容都会被保存
 
     # 作者的主页地址   示例 https://ishtartang.lofter.com/   *最后的'/'不能少
-    author_url = "https://miludrr.lofter.com/"
+    author_url = "https://zhengjingdeluobu.lofter.com/"
 
     # ### 自定义部分 ### #
 
