@@ -346,7 +346,7 @@ def merge_chapter_al(merge_titles, file_path, additional_chapter_index):
             with open(file_path + "/" + filename, "r", encoding="utf-8") as op:
                 file1 = op.read()
             if additional_chapter_index:
-                result += "第{}章\n".format(chapter_index)
+                result += "第{}章\t".format(chapter_index)
                 chapter_index += 1
             result = result + file1 + "\n\n"
 
@@ -366,7 +366,7 @@ def merge_chapter_al(merge_titles, file_path, additional_chapter_index):
 
 if __name__ == '__main__':
     # 作者的主页地址   示例 https://ishtartang.lofter.com/   *最后的'/'不能少
-    author_url = "https://2368962587.lofter.com/"
+    author_url = "https://bubblelaw.lofter.com/"
 
     # ### 自定义部分 ### #
 
@@ -374,9 +374,9 @@ if __name__ == '__main__':
     start_time = ""
     end_time = ""
 
-    # 章节合并：标题包含指定内容会自动合并，合并后会使用你写的标题作为文件名，空值为不合并
+    # 章节合并：标题包含指定内容会自动合并，合并后会用你写的标题作为文件名，合并文件里章节的顺序按作者发布顺序，空值为不合并
     # 例： chapter_merge_title = ["罐头厂爱情故事", "核城公园", "来日方长", "春山无尽", "乌拉尔的花楸树"]
-    chapter_merge_title = ["快来把你家祖宗拿走","世界树","逆命记"]
+    chapter_merge_title = []
     # 额外章节序号: 在每章前加入"第n章"，方便一些阅读软件自动分章（只是单纯的按顺序标号，并不能自动判断原标题是第几章）
     # 1启动，0关闭，chapter_merge_title为空时无效
     additional_chapter_index = 1
