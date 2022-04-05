@@ -23,7 +23,7 @@
 
 
 
-**用到的第三方库：**requests  lxml urllib3
+**用到的第三方库：**requests  lxml urllib3 html2text
 
 所有程序要设置的都在main里，划拉到程序最后面就是
 

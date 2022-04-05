@@ -11,6 +11,7 @@ dir
 useless
 example.html
 l13_forme.py
+tool_filter.py
 
 # Distribution / packaging
 .Python
