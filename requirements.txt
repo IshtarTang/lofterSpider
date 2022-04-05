@@ -1,0 +1,5 @@
+requests==2.19.1
+lxml==4.4.1
+urllib3==1.23
+json5==0.8.5
+html2text==2020.1.16
