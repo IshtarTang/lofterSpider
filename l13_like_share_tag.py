@@ -438,7 +438,6 @@ def infor_formater(favs_info, fav_str, mode, file_path, start_time, min_hot, pri
         content = html2text.html2text(tmp_content1.encode('latin-1').decode("unicode_escape", errors="ignore"))
         blog_info["content"] = content
 
-
         # 文章中插的图片
         illustration = []
         if tmp_content1:
@@ -466,18 +465,20 @@ def infor_formater(favs_info, fav_str, mode, file_path, start_time, min_hot, pri
         l_url = []
         l_img = []
         long_article = re.search('s\d{1,5}.compositeContent="(.*?)";s\d{1,5}', fav_info)
-        if long_article:
-            long_article1 = long_article.group(1)
-            parse = etree.HTML(long_article.group(1))
-            # .replace("\\", ""))
-            l_cover = re.search('s\d{1,5}.banner="(.*?)";', fav_info).group(1)
-            l_url = parse.xpath("//a//@href")
-            l_url = list(map(lambda x: x.replace("\\", "").replace('"', ''), l_url))
-            l_img = parse.xpath("//img/@src")
-            l_img = list(map(lambda x: x.replace("\\", "").replace('"', ''), l_img))
-            l_content = c = re.sub('<[^<]+?>', '', long_article1).replace("&nbsp;", " ").strip()
-            l_content = l_content.encode('latin-1').decode("unicode_escape", errors="ignore").strip()
-
+        try:
+            if long_article:
+                long_article1 = long_article.group(1)
+                parse = etree.HTML(long_article.group(1))
+                l_cover = re.search('s\d{1,5}.banner="(.*?)";', fav_info).group(1)
+                l_url = parse.xpath("//a//@href")
+                l_url = list(map(lambda x: x.replace("\\", "").replace('"', ''), l_url))
+                l_img = parse.xpath("//img/@src")
+                l_img = list(map(lambda x: x.replace("\\", "").replace('"', ''), l_img))
+                l_content = c = re.sub('<[^<]+?>', '', long_article1).replace("&nbsp;", " ").strip()
+                l_content = l_content.encode('latin-1').decode("unicode_escape", errors="ignore").strip()
+        except:
+            # print("长文章 {} 被屏蔽，无法获取正文".format(url))
+            pass
         blog_info["long article content"] = l_content
         blog_info["long article url"] = l_url
         blog_info["long article img"] = l_img
@@ -1123,7 +1124,7 @@ def run(url, mode, save_mode, classify_by_tag, prior_tags, agg_non_prior_tag, lo
 
 if __name__ == '__main__':
     # 基础设置  -------------------------------------------------------- #
-    url = "https://www.lofter.com/tag/hannigram/total"
+    url = "https://www.lofter.com/tag/%E6%96%91%E6%9F%B1/new"
     # 运行模式
     mode = "tag"
 
