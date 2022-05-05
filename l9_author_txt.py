@@ -11,9 +11,6 @@ import l4_author_img
 import l13_like_share_tag
 import numpy as np
 from collections import Counter
-import traceback
-
-session = requests.session()
 
 
 def get_parse(url):
@@ -93,7 +90,6 @@ def parse_archive_page(url, header, data, author_url, author_name, query_num, st
             title = "{} {}".format(author_name, dt_time)
         blog_info_dic["title"] = title
         blog_info_dic["print_title"] = blog_info_dic["title"].encode("gbk", errors="replace").decode("gbk",
-
                                                                                                      errors="replace")
 
         parsed_blog_info.append(blog_info_dic)
@@ -102,7 +98,7 @@ def parse_archive_page(url, header, data, author_url, author_name, query_num, st
     return parsed_blog_info
 
 
-def save_file(blog_infos, author_name, author_ip):
+def save_file(blog_infos, author_name, author_ip, get_comm):
     all_file_name = []
     print("开始保存文章内容")
     # 拿一篇出来，测试匹配模板
@@ -136,8 +132,67 @@ def save_file(blog_infos, author_name, author_ip):
         content = requests.get(url, headers=useragentutil.get_headers()).content
         parse = etree.HTML(content)
         article_content = parse_template.get_content(parse, template_id, title, blog_type)
+        comm_list = []
+        # 评论
+        if get_comm:
 
-        # 文件尾，文章中插的图片
+            referer_url = parse.xpath("//div[@class='main comment']//iframe/@src")[0]
+            param0 = re.search("pid=(\d+)&bid=", referer_url).group(1)
+            number1 = 50
+            number2 = 0
+            comm_url = "https://www.lofter.com/dwr/call/plaincall/PostBean.getPostResponses.dwr"
+            headers = {
+                'Host': 'www.lofter.com',
+                'Origin': 'https://www.lofter.com',
+                'Referer': "https:" + referer_url,
+                'Accept-Encoding': 'gzip, deflate',
+            }
+            all_comm_str = ""
+            while True:
+                comm_data = {"callCount": "1",
+                             "scriptSessionId": "${scriptSessionId}187",
+                             "httpSessionId": "",
+                             "c0-scriptName": "PostBean",
+                             "c0-methodName": "getPostResponses",
+                             "c0-id": "0",
+                             "c0-param0": "number:{}".format(param0),
+                             "c0-param1": "number:{}".format(number1),
+                             "c0-param2": "number:{}".format(number2),
+                             "batchId": "334950"}
+                number2 += number1
+                comm_response = requests.post(comm_url, data=comm_data, headers=headers)
+                comm_text = comm_response.content.decode("utf-8")
+                all_comm_str += comm_text
+                comm_infos = comm_text.split("anonymousUser")[1:]
+                if not comm_infos:
+                    break
+
+                for comm_info in comm_infos:
+                    # 评论内容
+                    comm_content = re.search('s\d+\.content="(.*?)";', comm_info).group(1) \
+                        .encode('utf8', errors="replace").decode('unicode_escape')
+                    # 评论发表时间
+                    comm_publish_time = re.search('s\d+\.publishTime=(\d+);', comm_info).group(1)
+                    public_time = time.strftime("%Y-%m-%d %H:%M", time.localtime(int(comm_publish_time) / 1000))
+                    # 发表者信息
+                    publisher_sid = re.search("s\d+\.publisherMainBlogInfo=(.*?);", comm_info).group(1)
+                    # 昵称
+                    re_publisher_nickname = re.search(publisher_sid + '\.blogNickName="(.*?)";', comm_info)
+                    if not re_publisher_nickname:
+                        re_publisher_nickname = re.search(publisher_sid + '\.blogNickName="(.*?)";', all_comm_str)
+                    publisher_nickname = re_publisher_nickname.group(1) \
+                        .encode('utf8', errors="replace").decode('unicode_escape')
+                    # 用户名
+                    re_publisher_blogname = re.search(publisher_sid + '\.blogName="(.*?)";', comm_info)
+                    if not re_publisher_blogname:
+                        re_publisher_blogname = re.search(publisher_sid + '\.blogName="(.*?)";', all_comm_str)
+                    publisher_blogname = re_publisher_blogname.group(1) \
+                        .encode('utf8', errors="replace").decode('unicode_escape')
+
+                    comm = "{}  {}[{}]：{}".format(public_time, publisher_nickname, publisher_blogname, comm_content)
+                    comm_list.append(comm)
+        comm_list = comm_list[::-1]
+        # 文件尾，文章中插,的图片
         # 匹配新格式
 
         illustration = re.findall('"(http[s]{0,1}://imglf\d{0,1}.lf\d*.[0-9]{0,3}.net.*?)"', content.decode("utf-8"))
@@ -160,7 +215,8 @@ def save_file(blog_infos, author_name, author_ip):
             article_tail = ""
 
         # 全文
-        article = article_head + "\n\n\n\n" + article_content + "\n\n\n" + article_tail
+        article = article_head + "\n\n\n\n" + article_content + "\n\n\n" + article_tail + "\n\n\n-----评论-----\n\n" + \
+                  "\n".join(comm_list)
         article = article.encode("utf-8", errors="replace").decode("utf-8", errors="replace")
 
         # 文件名
@@ -183,7 +239,7 @@ def save_file(blog_infos, author_name, author_ip):
     return all_file_name
 
 
-def run(author_url, start_time, end_time, merge_titles, additional_chapter_index):
+def run(author_url, get_comm, start_time, end_time, merge_titles, additional_chapter_index):
     author_page_parse = etree.HTML(
         requests.get(author_url, headers=useragentutil.get_headers()).content.decode("utf-8"))
     # id是是获取归档页面需要的一个参数，纯数字；ip是作者在lofter的三级域名，由作者注册时设定
@@ -215,7 +271,7 @@ def run(author_url, start_time, end_time, merge_titles, additional_chapter_index
     for x in [path, arthicle_path]:
         if not os.path.exists(x):
             os.makedirs(x)
-    all_file_name = save_file(blog_infos, author_name, author_ip)
+    all_file_name = save_file(blog_infos, author_name, author_ip, get_comm)
     all_file_name.reverse()
     print("保存完毕")
     if merge_titles:
@@ -370,6 +426,9 @@ if __name__ == '__main__':
 
     # ### 自定义部分 ### #
 
+    # 是否爬取评论，1为爬取，0为不爬取
+    get_comm = 1
+
     # 设定爬取哪个时间段的博客，空值为不设定 格式："yyyy-MM-dd" 例："2020-05-01"
     start_time = ""
     end_time = ""
@@ -381,4 +440,4 @@ if __name__ == '__main__':
     # 1启动，0关闭，chapter_merge_title为空时无效
     additional_chapter_index = 1
 
-    run(author_url, start_time, end_time, chapter_merge_title, additional_chapter_index)
+    run(author_url, get_comm, start_time, end_time, chapter_merge_title, additional_chapter_index)

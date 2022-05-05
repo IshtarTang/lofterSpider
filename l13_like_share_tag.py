@@ -253,10 +253,6 @@ def save_all_fav(url, mode, file_path, login_info, start_time):
         content = fav_response.content.decode("utf-8")
         # activityTags应该是第一或者第二个属性，从这切差不多能保证信息完整
         new_info = content.split("activityTags")[1:]
-
-        # if new_info:
-        #     print(new_info[-1])
-
         fav_info += new_info
         got_num += get_num
         real_got_num += len(new_info)
