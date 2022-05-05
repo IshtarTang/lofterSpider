@@ -168,14 +168,17 @@ def save_file(blog_infos, author_name, author_ip, get_comm):
                     break
 
                 for comm_info in comm_infos:
+                    # 获取的信息里每条评论有个s\d+编号
+                    comm_sid = re.search("(s\d+)\.appVersion", comm_info).group(1)
                     # 评论内容
-                    comm_content = re.search('s\d+\.content="(.*?)";', comm_info).group(1) \
+                    comm_content = re.search(comm_sid + '\.content="(.*?)";', comm_info).group(1) \
                         .encode('utf8', errors="replace").decode('unicode_escape')
                     # 评论发表时间
-                    comm_publish_time = re.search('s\d+\.publishTime=(\d+);', comm_info).group(1)
+                    comm_publish_time = re.search(comm_sid + '\.publishTime=(\d+);', comm_info).group(1)
                     public_time = time.strftime("%Y-%m-%d %H:%M", time.localtime(int(comm_publish_time) / 1000))
+
                     # 发表者信息
-                    publisher_sid = re.search("s\d+\.publisherMainBlogInfo=(.*?);", comm_info).group(1)
+                    publisher_sid = re.search(comm_sid + "\.publisherMainBlogInfo=(.*?);", comm_info).group(1)
                     # 昵称
                     re_publisher_nickname = re.search(publisher_sid + '\.blogNickName="(.*?)";', comm_info)
                     if not re_publisher_nickname:
@@ -189,7 +192,25 @@ def save_file(blog_infos, author_name, author_ip, get_comm):
                     publisher_blogname = re_publisher_blogname.group(1) \
                         .encode('utf8', errors="replace").decode('unicode_escape')
 
-                    comm = "{}  {}[{}]：{}".format(public_time, publisher_nickname, publisher_blogname, comm_content)
+                    # 回复
+                    reply_blogsid = re.search(comm_sid + "\.replyBlogInfo=(.*?);", comm_info).group(1)
+                    if not reply_blogsid == "null":
+                        re_reply_nickname = re.search(reply_blogsid + '\.blogNickName="(.*?)";', comm_info)
+                        if not re_reply_nickname:
+                            re_reply_nickname = re.search(reply_blogsid + '\.blogNickName="(.*?)";', all_comm_str)
+                        reply_nickname = re_reply_nickname.group(1).encode('utf8', errors="replace").decode('unicode_escape')
+                        re_reply_blogname = re.search(reply_blogsid + '\.blogName="(.*?)";', comm_info)
+                        if not re_reply_blogname:
+                            re_reply_blogname = re.search(reply_blogsid + '\.blogName="(.*?)";', all_comm_str)
+                        reply_blogname = re_reply_blogname.group(1)
+                    else:
+                        reply_nickname = ""
+                        reply_blogname = ""
+                    if reply_nickname:
+                        comm = "{} {}[{}] 回复 {}[{}]：{}".format(public_time, publisher_nickname, publisher_blogname,
+                                                             reply_nickname, reply_blogname, comm_content)
+                    else:
+                        comm = "{}  {}[{}]：{}".format(public_time, publisher_nickname, publisher_blogname, comm_content)
                     comm_list.append(comm)
         comm_list = comm_list[::-1]
         # 文件尾，文章中插,的图片
@@ -215,8 +236,8 @@ def save_file(blog_infos, author_name, author_ip, get_comm):
             article_tail = ""
 
         # 全文
-        article = article_head + "\n\n\n\n" + article_content + "\n\n\n" + article_tail + "\n\n\n-----评论-----\n\n" + \
-                  "\n".join(comm_list)
+        article = article_head + "\n\n\ n\n" + article_content + "\n\n\n" + article_tail + \
+                  ("\n\n\n-----评论-----\n\n" + "\n".join(comm_list) if comm_list else "")
         article = article.encode("utf-8", errors="replace").decode("utf-8", errors="replace")
 
         # 文件名
@@ -427,7 +448,7 @@ if __name__ == '__main__':
     # ### 自定义部分 ### #
 
     # 是否爬取评论，1为爬取，0为不爬取
-    get_comm = 1
+    get_comm = 0
 
     # 设定爬取哪个时间段的博客，空值为不设定 格式："yyyy-MM-dd" 例："2020-05-01"
     start_time = ""
