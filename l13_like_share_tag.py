@@ -909,6 +909,9 @@ def run(url, mode, save_mode, classify_by_tag, prior_tags, agg_non_prior_tag, lo
     elif mode == "share":
         file_path = share_file_path
     elif mode == "tag":
+        if url.split("/")[-1] not in ["new", "total", "month", "week", "date"]:
+            url += "/new"
+        print(url)
         tag = re.search("http[s]{0,1}://www.lofter.com/tag/(.*?)/.*", url).group(1)
         tag = parse.unquote(tag)
         file_path = tag_file_path + "/" + tag
@@ -1120,7 +1123,7 @@ def run(url, mode, save_mode, classify_by_tag, prior_tags, agg_non_prior_tag, lo
 
 if __name__ == '__main__':
     # 基础设置  -------------------------------------------------------- #
-    url = "https://www.lofter.com/tag/%E6%96%91%E6%9F%B1/new"
+    url = "https://www.lofter.com/tag/%E6%9C%8D%E9%83%A8%E5%B9%B3%E6%AC%A1"
     # 运行模式
     mode = "tag"
 

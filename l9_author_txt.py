@@ -198,7 +198,8 @@ def save_file(blog_infos, author_name, author_ip, get_comm):
                         re_reply_nickname = re.search(reply_blogsid + '\.blogNickName="(.*?)";', comm_info)
                         if not re_reply_nickname:
                             re_reply_nickname = re.search(reply_blogsid + '\.blogNickName="(.*?)";', all_comm_str)
-                        reply_nickname = re_reply_nickname.group(1).encode('utf8', errors="replace").decode('unicode_escape')
+                        reply_nickname = re_reply_nickname.group(1).encode('utf8', errors="replace").decode(
+                            'unicode_escape')
                         re_reply_blogname = re.search(reply_blogsid + '\.blogName="(.*?)";', comm_info)
                         if not re_reply_blogname:
                             re_reply_blogname = re.search(reply_blogsid + '\.blogName="(.*?)";', all_comm_str)
@@ -208,7 +209,7 @@ def save_file(blog_infos, author_name, author_ip, get_comm):
                         reply_blogname = ""
                     if reply_nickname:
                         comm = "{} {}[{}] 回复 {}[{}]：{}".format(public_time, publisher_nickname, publisher_blogname,
-                                                             reply_nickname, reply_blogname, comm_content)
+                                                               reply_nickname, reply_blogname, comm_content)
                     else:
                         comm = "{}  {}[{}]：{}".format(public_time, publisher_nickname, publisher_blogname, comm_content)
                     comm_list.append(comm)
@@ -248,6 +249,7 @@ def save_file(blog_infos, author_name, author_ip, get_comm):
                 .replace(">", "》").replace(":", "：").replace('"', '”').replace("?", "？").replace("*", "·"). \
                 replace("\n", "").replace("(", "（").replace(
                 ")", "）").replace(",", "，")
+            file_name = l13_like_share_tag.filename_check(file_name, article, arthicle_path, "txt")
         else:
             # 文本要检查是否重名
             file_name = l13_like_share_tag.filename_check(title + ".txt", article, arthicle_path, "txt")
@@ -255,7 +257,10 @@ def save_file(blog_infos, author_name, author_ip, get_comm):
         # 写入
         with open(arthicle_path + "/" + file_name, "w", encoding="utf-8") as op:
             op.write(article)
-        print("{}  保存完毕".format(print_title))
+        try:
+            print("{}  保存完毕".format(file_name))
+        except:
+            print("{}  保存完毕".format(print_title))
         all_file_name.append(file_name)
     return all_file_name
 
@@ -443,7 +448,7 @@ def merge_chapter_al(merge_titles, file_path, additional_chapter_index):
 
 if __name__ == '__main__':
     # 作者的主页地址   示例 https://ishtartang.lofter.com/   *最后的'/'不能少
-    author_url = "https://bubblelaw.lofter.com/"
+    author_url = "https://guairen645.lofter.com/"
 
     # ### 自定义部分 ### #
 
