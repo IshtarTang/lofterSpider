@@ -3,3 +3,4 @@ lxml
 urllib3
 html2text
 json5
+numpy

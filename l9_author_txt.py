@@ -135,8 +135,7 @@ def save_file(blog_infos, author_name, author_ip, get_comm):
         comm_list = []
         # 评论
         if get_comm:
-
-            referer_url = parse.xpath("//div[@class='main comment']//iframe/@src")[0]
+            referer_url = parse.xpath("//iframe[@id='comment_frame']/@src")[0]
             param0 = re.search("pid=(\d+)&bid=", referer_url).group(1)
             number1 = 50
             number2 = 0
@@ -237,7 +236,7 @@ def save_file(blog_infos, author_name, author_ip, get_comm):
             article_tail = ""
 
         # 全文
-        article = article_head + "\n\n\ n\n" + article_content + "\n\n\n" + article_tail + \
+        article = article_head + "\n\n\n\n" + article_content + "\n\n\n" + article_tail + \
                   ("\n\n\n-----评论-----\n\n" + "\n".join(comm_list) if comm_list else "")
         article = article.encode("utf-8", errors="replace").decode("utf-8", errors="replace")
 
@@ -372,7 +371,7 @@ def merge_chapter_al(merge_titles, file_path, additional_chapter_index):
     author_name = files[0].split("by ")[1].split(".txt")[0]
 
     title_dict = {}
-    # 先找出来
+    # 先找出来带目标标题的
     for merge_title in merge_titles:
         title_dict[merge_title] = []
         for file_name in files:
@@ -448,12 +447,12 @@ def merge_chapter_al(merge_titles, file_path, additional_chapter_index):
 
 if __name__ == '__main__':
     # 作者的主页地址   示例 https://ishtartang.lofter.com/   *最后的'/'不能少
-    author_url = "https://guairen645.lofter.com/"
+    author_url = "https://jianshujianai.lofter.com/"
 
     # ### 自定义部分 ### #
 
     # 是否爬取评论，1为爬取，0为不爬取
-    get_comm = 0
+    get_comm = 1
 
     # 设定爬取哪个时间段的博客，空值为不设定 格式："yyyy-MM-dd" 例："2020-05-01"
     start_time = ""
