@@ -370,7 +370,7 @@ def infor_formater(favs_info, fav_str, mode, file_path, start_time, min_hot, pri
         # 文件中不允许出现的字符，在用于文件名时要全部替换掉，英文括号换成中文括号，避免在检查文件名重复时被切割
         author_name_in_filename = author_name.replace("/", "&").replace("|", "&").replace("\r", " ").replace(
             "\\", "&").replace("<", "《").replace(">", "》").replace(":", "：").replace('"', '”').replace("?", "？") \
-            .replace("*", "·").replace("\n", "").replace("(", "（").replace(")", "）").strip()
+            .replace("*", "·").replace("\n", "").replace("(", "（").replace(")", "）").replace("\t", " ").strip()
         blog_info["author name in filename"] = author_name_in_filename
         # 作者ip
         author_ip = re.search("http[s]{0,1}://(.*?).lofter.com", url).group(1)
@@ -398,7 +398,7 @@ def infor_formater(favs_info, fav_str, mode, file_path, start_time, min_hot, pri
         except:
             title = ""
         title_in_filename = title.replace("/", "&").replace("|", "&").replace("\r", " ").replace(
-            "\\", "&") \
+            "\\", "&").replace("\t", " ") \
             .replace("<", "《").replace(">", "》").replace(":", "：").replace('"', '”').replace("?", "？") \
             .replace("*", "·").replace("\n", "").replace("(", "（").replace(")", "）").strip()
         blog_info["title"] = title
@@ -1123,7 +1123,7 @@ def run(url, mode, save_mode, classify_by_tag, prior_tags, agg_non_prior_tag, lo
 
 if __name__ == '__main__':
     # 基础设置  -------------------------------------------------------- #
-    url = "https://www.lofter.com/tag/%E6%9C%8D%E9%83%A8%E5%B9%B3%E6%AC%A1"
+    url = "https://www.lofter.com/tag/%E8%8C%82%E7%81%B5/new"
     # 运行模式
     mode = "tag"
 
@@ -1154,7 +1154,7 @@ if __name__ == '__main__':
     # tag模式的最低热度限制  --------------------------------------------- #
     min_hot = 0
 
-    # 其他设置  --------------------------------------------------------- #
+    # 其他设置  ------------------- -------------------------------------- #
 
     # 保存 文章/长文章/文本 中包含的图片，lofter是可以插图片连接的所以图片不一定是lofter的图片，这个功能有翻车的可能性
     save_img_in_text = 1
