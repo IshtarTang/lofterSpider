@@ -247,7 +247,8 @@ def save_file(blog_infos, author_name, author_ip, get_comm):
             file_name = file_name.replace("/", "&").replace("|", "&").replace("\\", "&").replace("<", "《") \
                 .replace(">", "》").replace(":", "：").replace('"', '”').replace("?", "？").replace("*", "·"). \
                 replace("\n", "").replace("(", "（").replace(
-                ")", "）").replace(",", "，")
+                ")", "）").replace(",", "，").replace("\t", " ")
+            file_name = re.compile('[\\x00-\\x08\\x0b-\\x0c\\x0e-\\x1f]').sub(' ', file_name)
             file_name = l13_like_share_tag.filename_check(file_name, article, arthicle_path, "txt")
         else:
             # 文本要检查是否重名
@@ -447,7 +448,7 @@ def merge_chapter_al(merge_titles, file_path, additional_chapter_index):
 
 if __name__ == '__main__':
     # 作者的主页地址   示例 https://ishtartang.lofter.com/   *最后的'/'不能少
-    author_url = "https://jianshujianai.lofter.com/"
+    author_url = "https://bento666.lofter.com/"
 
     # ### 自定义部分 ### #
 

@@ -370,7 +370,8 @@ def infor_formater(favs_info, fav_str, mode, file_path, start_time, min_hot, pri
         # 文件中不允许出现的字符，在用于文件名时要全部替换掉，英文括号换成中文括号，避免在检查文件名重复时被切割
         author_name_in_filename = author_name.replace("/", "&").replace("|", "&").replace("\r", " ").replace(
             "\\", "&").replace("<", "《").replace(">", "》").replace(":", "：").replace('"', '”').replace("?", "？") \
-            .replace("*", "·").replace("\n", "").replace("(", "（").replace(")", "）").replace("\t", " ").strip()
+            .replace("*", "·").replace("\n", "").replace("*", "·").replace("\n", "").replace("(", "（").replace(")", "）").replace("\t", " ").strip()
+        author_name_in_filename = re.compile('[\\x00-\\x08\\x0b-\\x0c\\x0e-\\x1f]').sub(' ', author_name_in_filename)
         blog_info["author name in filename"] = author_name_in_filename
         # 作者ip
         author_ip = re.search("http[s]{0,1}://(.*?).lofter.com", url).group(1)
@@ -401,6 +402,7 @@ def infor_formater(favs_info, fav_str, mode, file_path, start_time, min_hot, pri
             "\\", "&").replace("\t", " ") \
             .replace("<", "《").replace(">", "》").replace(":", "：").replace('"', '”').replace("?", "？") \
             .replace("*", "·").replace("\n", "").replace("(", "（").replace(")", "）").strip()
+        title_in_filename = re.compile('[\\x00-\\x08\\x0b-\\x0c\\x0e-\\x1f]').sub(' ', title_in_filename)
         blog_info["title"] = title
         blog_info["title in filename"] = title_in_filename
 
