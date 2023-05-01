@@ -1,5 +1,6 @@
 import re
 
+
 """
 //div[@class="content"]			基本版		有标题	http://yangliu12.lofter.com/post/30ee0643_1c98d95fa
 //div[@class="cont"]/div[@class="text"]	作者头像在上	有标题	http://sxhyl.lofter.com/post/1e77aca2_1c6d7acdc
@@ -28,7 +29,7 @@ import re
 
 
 # 通用模板，会爬到些别的
-def all_purpose_template(parse, title, blog_type):
+def all_purpose_template(parse, title, blog_type, join_word=""):
     lines = parse.xpath('/html//text()')
     content = "".join(lines)
     if blog_type == "article":
@@ -41,52 +42,53 @@ def all_purpose_template(parse, title, blog_type):
 
 
 # 模板1 lofter初始模板 http://yangliu12.lofter.com 有标题
-def template1(parse):
+def template1(parse, join_word=""):
     lines = parse.xpath('//div[@class="content"]/div[@class="text"]//text()')
-    content = "".join(lines)
+    content = join_word.join(lines)
     return content
 
 
 # 模板2 http://sxhyl.lofter.com/post/1e77aca2_1c6d7acdc 有标题
-def template2(parse):
+def template2(parse, join_word=""):
     lines = parse.xpath('//div[@class="cont"]/div[@class="text"]//text()')
-    content = "".join(lines)
+    content = join_word.join(lines)
     return content
 
 
 # 模板3 https://bmdxc.lofter.com/post/3d8916_1c9a35a4b，有标题 跟2很像，但是标签有点问题
-def template3(parse):
+def template3(parse, join_word=""):
     # lines = parse.xpath('//div[@class="cont"]//text()')
     lines = parse.xpath('//div[@class="cont"]/div[@class]//text()')
-    content = "".join(lines).split("评论")[0]
+    content = join_word.join(lines).split("评论")[0]
     return content
 
 
 # 模板4 http://cersternay.lofter.com/post/1d57590b_ee734b04 无标题
-def template4(parse):
+def template4(parse, join_word=""):
     lines = parse.xpath('//div[@class="txtcont"]//text()')
-    content = "".join(lines)
+    content = join_word.join(lines)
     return content
 
 
 # 模板5 https://imakuf.lofter.com/post/1f7d9e_1c7651049 无标题
-def template5(parse):
+def template5(parse, join_word=""):
     lines = parse.xpath('//div[@class="text"]//text()')
-    content = "".join(lines)
+    content = join_word.join(lines)
     return content
 
 
 # 模板6 https://anisette642.lofter.com/post/30f2af97_1c9a05b43 有标题
-def template6(parse):
+def template6(parse, join_word=""):
     lines = parse.xpath('//div[@class="text"]/p/text()')
-    contetn = "\n\n".join(lines)
+    contetn = (join_word + "\n\n").join(lines)
     return contetn
 
+
 # 7 https://chuanshoot.lofter.com/ 好像是自定义主页
-def template7(parse):
+def template7(parse, join_word=""):
     # lines = parse.xpath("//div[contains(@class,'post-ctc box')]/p/text()")
     lines = parse.xpath("//div[contains(@class,'post-ctc box')]//p//text()")
-    content = "".join(lines)
+    content = join_word.join(lines)
     return content
 
 
@@ -109,27 +111,27 @@ def matcher(parse):
     return template_id
 
 
-def get_content(parse, template_id, title, blog_type):
+def get_content(parse, template_id, title, blog_type, join_word=""):
     content = ""
     if template_id == 1:
-        content = template1(parse)
+        content = template1(parse, join_word)
         content = content.replace(title, "", 1)
     if template_id == 2:
-        content = template2(parse)
-        content = content.replace(title, "")
+        content = template2(parse, join_word)
+        content = content.replace(title, "",1)
     if template_id == 3:
-        content = template3(parse)
-        content = content.replace(title, "")
+        content = template3(parse, join_word)
+        content = content.replace(title, "",1)
     if template_id == 4:
-        content = template4(parse)
+        content = template4(parse, join_word)
     if template_id == 5:
-        content = template5(parse)
+        content = template5(parse, join_word)
     if template_id == 6:
-        content = template6(parse)
+        content = template6(parse, join_word)
     if template_id == 7:
-        content = template7(parse)
+        content = template7(parse, join_word)
     if template_id == 0:
-        content = all_purpose_template(parse, title, blog_type)
+        content = all_purpose_template(parse, title, blog_type, join_word)
         content = content.replace("    ", "").replace("\t", "")
     content = content.strip()
     return content

@@ -98,7 +98,7 @@ def parse_archive_page(url, header, data, author_url, author_name, query_num, st
     return parsed_blog_info
 
 
-def save_file(blog_infos, author_name, author_ip, get_comm):
+def save_file(blog_infos, author_name, author_ip, get_comm, additional_break):
     all_file_name = []
     print("开始保存文章内容")
     # 拿一篇出来，测试匹配模板
@@ -131,7 +131,8 @@ def save_file(blog_infos, author_name, author_ip, get_comm):
         # 正文
         content = requests.get(url, headers=useragentutil.get_headers()).content
         parse = etree.HTML(content)
-        article_content = parse_template.get_content(parse, template_id, title, blog_type)
+        join_word = "\n" * additional_break
+        article_content = parse_template.get_content(parse, template_id, title, blog_type, join_word)
         comm_list = []
         # 评论
         if get_comm:
@@ -265,7 +266,7 @@ def save_file(blog_infos, author_name, author_ip, get_comm):
     return all_file_name
 
 
-def run(author_url, get_comm, start_time, end_time, merge_titles, additional_chapter_index):
+def run(author_url, get_comm, additional_break, start_time, end_time, merge_titles, additional_chapter_index):
     author_page_parse = etree.HTML(
         requests.get(author_url, headers=useragentutil.get_headers()).content.decode("utf-8"))
     # id是是获取归档页面需要的一个参数，纯数字；ip是作者在lofter的三级域名，由作者注册时设定
@@ -297,7 +298,7 @@ def run(author_url, get_comm, start_time, end_time, merge_titles, additional_cha
     for x in [path, arthicle_path]:
         if not os.path.exists(x):
             os.makedirs(x)
-    all_file_name = save_file(blog_infos, author_name, author_ip, get_comm)
+    all_file_name = save_file(blog_infos, author_name, author_ip, get_comm, additional_break)
     all_file_name.reverse()
     print("保存完毕")
     if merge_titles:
@@ -448,22 +449,24 @@ def merge_chapter_al(merge_titles, file_path, additional_chapter_index):
 
 if __name__ == '__main__':
     # 作者的主页地址   示例 https://ishtartang.lofter.com/   *最后的'/'不能少
-    author_url = "https://bento666.lofter.com/"
+    author_url = "https://jimohechu.lofter.com/"
 
     # ### 自定义部分 ### #
 
     # 是否爬取评论，1为爬取，0为不爬取
-    get_comm = 1
+    get_comm = 0
+
+    # 额外换行，默认0，设为1的话会在每个解析段之间多加一次换行，2就是多两次换行，视情况和你的阅读习惯设置
+    additional_break = 0
 
     # 设定爬取哪个时间段的博客，空值为不设定 格式："yyyy-MM-dd" 例："2020-05-01"
     start_time = ""
     end_time = ""
 
     # 章节合并：标题包含指定内容会自动合并，合并后会用你写的标题作为文件名，合并文件里章节的顺序按作者发布顺序，空值为不合并
-    # 例： chapter_merge_title = ["罐头厂爱情故事", "核城公园", "来日方长", "春山无尽", "乌拉尔的花楸树"]
     chapter_merge_title = []
-    # 额外章节序号: 在每章前加入"第n章"，方便一些阅读软件自动分章（只是单纯的按顺序标号，并不能自动判断原标题是第几章）
+    # 额外章节序号: 合并后的文件在每章前加入"第n章"，方便一些阅读软件自动分章（只是单纯的按顺序标号，并不能自动判断原标题是第几章）
     # 1启动，0关闭，chapter_merge_title为空时无效
-    additional_chapter_index = 1
+    additional_chapter_index = 0
 
-    run(author_url, get_comm, start_time, end_time, chapter_merge_title, additional_chapter_index)
+    run(author_url, get_comm, additional_break, start_time, end_time, chapter_merge_title, additional_chapter_index)
