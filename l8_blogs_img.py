@@ -9,12 +9,11 @@ import l4_author_img
 
 
 # 博客发表时间需要从归档页面获取，内容较长，所以单独分出一个方法
-def get_time(blog_url, author_page_parse):
+def get_time(blog_url, author_id):
     print("准备从归档页面获取时间", end="    ")
     public_time = ""
     author_url = blog_url.split("/post")[0]
     archive_url = author_url + "/dwr/call/plaincall/ArchiveBean.getArchivePostByTime.dwr"
-    author_id = author_page_parse.xpath("//body/iframe[@id='control_frame']/@src")[0].split("blogId=")[1]
     data = l4_author_img.make_data(author_id, 50)
     header = l4_author_img.make_head(author_url)
     blog_id = blog_url.split("/")[-1]
@@ -61,11 +60,13 @@ def parse_blogs_info(blogs_urls):
     for blog_url in blogs_urls:
         print("博客 %s 开始解析" % (blog_url))
         content = requests.get(blog_url, headers=useragentutil.get_headers()).content.decode("utf-8")
-        author_page_parse = etree.HTML(requests.get(blog_url.split("/post")[0]).content.decode("utf-8"))
-        author_name = author_page_parse.xpath("//title/text()")[0].replace("\n", "").replace(" ", "")
+        author_view_url = blog_url.split("/post")[0]+"/view"
+        author_view_parse = etree.HTML(requests.get(author_view_url).content.decode("utf-8"))
+        author_name = author_view_parse.xpath("//h1/a/text()")[0]
+        author_id = author_view_parse.xpath("//body//iframe[@id='control_frame']/@src")[0].split("blogId=")[1]
         author_ip = re.search(r"http(s)*://(.*).lofter.com/", blog_url).group(2)
         # 获取博客发表时间
-        public_time = get_time(blog_url, author_page_parse)
+        public_time = get_time(blog_url, author_id)
 
         # 不同作者主页会有不同页面结构，所以没有使用xpath而是直接用正则匹配出所有的图片链接
         # imgs_url = re.findall('"(http[s]{0,1}://imglf\d{0,1}.nosdn\d*.[0-9]{0,3}.net.*?)"', content)

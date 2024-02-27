@@ -399,9 +399,9 @@ def deal_file(action):
 # 整理各种参数，启动程序
 def run(author_url, start_time, end_time, target_tags, tags_filter_mode, file_update_interval):
     author_page_parse = etree.HTML(
-        requests.get(author_url, headers=useragentutil.get_headers()).content.decode("utf-8"))
+        requests.get(author_url+"/view", headers=useragentutil.get_headers()).content.decode("utf-8"))
     # id是是获取归档页面需要的一个参数，纯数字；ip是作者在lofter的三级域名，由作者注册时设定
-    author_id = author_page_parse.xpath("//body/iframe[@id='control_frame']/@src")[0].split("blogId=")[1]
+    author_id = author_page_parse.xpath("//body//iframe[@id='control_frame']/@src")[0].split("blogId=")[1]
     author_ip = re.search(r"http[s]*://(.*).lofter.com/", author_url).group(1)
 
     try:

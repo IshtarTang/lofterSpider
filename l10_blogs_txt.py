@@ -16,12 +16,11 @@ def get_parse(url):
 
 
 # 博客发表时间需要从归档页面获取，内容较长，所以单独分出一个方法
-def get_time_and_title(blog_url, author_page_parse):
+def get_time_and_title(blog_url, author_id):
     print("准备从归档页面获取时间", end="    ")
     public_time = ""
     author_url = blog_url.split("/post")[0]
     archive_url = author_url + "/dwr/call/plaincall/ArchiveBean.getArchivePostByTime.dwr"
-    author_id = author_page_parse.xpath("//body/iframe[@id='control_frame']/@src")[0].split("blogId=")[1]
     data = l4_author_img.make_data(author_id, 50)
     header = l4_author_img.make_head(author_url)
     blog_id = blog_url.split("/")[-1]
@@ -70,11 +69,15 @@ def save_files(blogs_urls):
     # 循环len(blogs_info)次，每次解析blogs_info的第一元素，解析完后删除
     for blog_url in blogs_urls:
         print("博客 %s 开始解析" % (blog_url))
-        author_page_parse = etree.HTML(requests.get(blog_url.split("/post")[0]).content.decode("utf-8"))
-        author_name = author_page_parse.xpath("//title/text()")[0].replace("\n", "").replace(" ", "")
         author_ip = re.search(r"http(s)*://(.*).lofter.com/", blog_url).group(2)
-        parse = get_parse(blog_url)
-        time_and_title = get_time_and_title(blog_url, author_page_parse)
+        blog_parse = get_parse(blog_url)
+
+        author_view_url = blog_url.split("/post")[0] + "/view"
+        author_view_parse = etree.HTML(requests.get(author_view_url).content.decode("utf-8"))
+        author_id = author_view_parse.xpath("//body//iframe[@id='control_frame']/@src")[0].split("blogId=")[1]
+        author_name = author_view_parse.xpath("//h1/a/text()")[0]
+
+        time_and_title = get_time_and_title(blog_url, author_id)
         title = time_and_title[1]
         blog_type = "article" if title else "text"
         article_head = "{} by {}[{}]\n发表时间：{}".format(title, author_name, author_ip, time_and_title[0])+"\n"+"原文链接： "+blog_url
@@ -87,11 +90,11 @@ def save_files(blogs_urls):
             replace("\n", "").replace("(", "（").replace(
             ")", "）")
         print("准备保存：{} by {}，原文连接： {} ".format(title, author_name, blog_url))
-        template_id = parse_template.matcher(parse)
+        template_id = parse_template.matcher(blog_parse)
         print("文字匹配模板为模板{}".format(template_id))
         if template_id == 0:
             print("文字匹配模板是根据作者主页自动匹配的，模板0为通用匹配模板，除了文章主体之外可能会爬到一些其他的内容，也有可能出现文章部分内容缺失")
-        article_content = parse_template.get_content(parse, template_id, title,blog_type)
+        article_content = parse_template.get_content(blog_parse, template_id, title,blog_type)
         article = article_head + "\n\n\n\n" + article_content
         with open("./dir/article/this/{}".format(file_name), "w", encoding="utf-8") as op:
             op.write(article)
@@ -103,7 +106,7 @@ if __name__ == '__main__':
     arthicle_path = "./dir/article/this"
     for x in [path, arthicle_path]:
         if not os.path.exists(x):
-            os.makedirs(x)
+            os.makedirs( x)
 
     with open("./dir/txt_list") as op:
         blog_urls = op.readlines()

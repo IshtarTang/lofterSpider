@@ -31,7 +31,7 @@ import re
 # 通用模板，会爬到些别的
 def all_purpose_template(parse, title, blog_type, join_word=""):
     lines = parse.xpath('/html//text()')
-    content = "".join(lines)
+    content = join_word.join(lines)
     if blog_type == "article":
         title = title.encode("gbk", errors="replace").decode("gbk", errors="replace").replace("?", "")
         content = content.split(title, 2)[2]
