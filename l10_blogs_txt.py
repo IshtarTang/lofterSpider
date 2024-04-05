@@ -18,7 +18,6 @@ def get_parse(url):
 # 博客发表时间需要从归档页面获取，内容较长，所以单独分出一个方法
 def get_time_and_title(blog_url, author_id):
     print("准备从归档页面获取时间", end="    ")
-    public_time = ""
     author_url = blog_url.split("/post")[0]
     archive_url = author_url + "/dwr/call/plaincall/ArchiveBean.getArchivePostByTime.dwr"
     data = l4_author_img.make_data(author_id, 50)
@@ -73,6 +72,7 @@ def save_files(blogs_urls):
         blog_parse = get_parse(blog_url)
 
         author_view_url = blog_url.split("/post")[0] + "/view"
+        print(author_view_url)
         author_view_parse = etree.HTML(requests.get(author_view_url).content.decode("utf-8"))
         author_id = author_view_parse.xpath("//body//iframe[@id='control_frame']/@src")[0].split("blogId=")[1]
         author_name = author_view_parse.xpath("//h1/a/text()")[0]

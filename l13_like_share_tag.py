@@ -42,7 +42,7 @@ def write_img(file, filename, path):
 def get_logion_session(login_info):
     """
     获取一个登录过的session
-    :param login_info: 手机号，密码，登录授权码构成的子弟按
+    :param login_info: 手机号，密码，登录授权码构成的字典
     :return: session
     """
     headers = {
@@ -71,13 +71,10 @@ def get_logion_session(login_info):
                       'Target': 'www.lofter.com',
                       'callback': 'loft.m.tellogin.g.jsonplogin'}
 
-    logion_url = "https://www.lofter.com/lpt/login.do"
-
     # 主页参数设置
     homepage_url = "http://www.lofter.com/"
     cookies = RequestsCookieJar()
-    cookies.set("LOFTER-PHONE-LOGIN-AUTH",
-                login_info["login auth"])
+    cookies.set("LOFTER-PHONE-LOGIN-AUTH",login_info["login auth"])
     session.cookies = cookies
 
     # 请求主页
@@ -370,7 +367,9 @@ def infor_formater(favs_info, fav_str, mode, file_path, start_time, min_hot, pri
         # 文件中不允许出现的字符，在用于文件名时要全部替换掉，英文括号换成中文括号，避免在检查文件名重复时被切割
         author_name_in_filename = author_name.replace("/", "&").replace("|", "&").replace("\r", " ").replace(
             "\\", "&").replace("<", "《").replace(">", "》").replace(":", "：").replace('"', '”').replace("?", "？") \
-            .replace("*", "·").replace("\n", "").replace("*", "·").replace("\n", "").replace("(", "（").replace(")", "）").replace("\t", " ").strip()
+            .replace("*", "·").replace("\n", "").replace("*", "·").replace("\n", "").replace("(", "（").replace(")",
+                                                                                                               "）").replace(
+            "\t", " ").strip()
         author_name_in_filename = re.compile('[\\x00-\\x08\\x0b-\\x0c\\x0e-\\x1f]').sub(' ', author_name_in_filename)
         blog_info["author name in filename"] = author_name_in_filename
         # 作者ip

@@ -11,7 +11,6 @@ import l4_author_img
 # 博客发表时间需要从归档页面获取，内容较长，所以单独分出一个方法
 def get_time(blog_url, author_id):
     print("准备从归档页面获取时间", end="    ")
-    public_time = ""
     author_url = blog_url.split("/post")[0]
     archive_url = author_url + "/dwr/call/plaincall/ArchiveBean.getArchivePostByTime.dwr"
     data = l4_author_img.make_data(author_id, 50)
