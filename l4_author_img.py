@@ -7,13 +7,25 @@ import requests
 from urllib.parse import unquote
 from lxml.html import etree
 import useragentutil
+from requests.cookies import RequestsCookieJar
 
-session = requests.session()
 
-
-def post_content(url, data, head):
+def post_content(url, data, head, cookies_dict=None):
+    """
+    :param url:
+    :param data:
+    :param head:
+    :param cookies_dict:
+    :return:
+    """
+    session = requests.session()
     session.headers = head
     response = session.post(url, data=data)
+    if cookies_dict:
+        cookies = RequestsCookieJar()
+        for key, value in cookies_dict.items():
+            cookies.set(key, value)
+        session.cookies = cookies
     content = response.content.decode("utf-8")
     return content
 
@@ -144,12 +156,12 @@ def tag_filter(blog_tags, target_tags, mode):
 
 
 # 获取归档页面信息
-def parse_archive_page(url, header, data, author_url, query_num, start_time, end_time):
+def parse_archive_page(url, login_auth, header, data, author_url, query_num, start_time, end_time):
     all_blog_info = []
 
     while True:
         print("获取归档页面信息，当前请求的时间戳参数为 %s" % data["c0-param2"])
-        page_data = post_content(url=url, data=data, head=header)
+        page_data = post_content(url=url, data=data, head=header,cookies_dict={"LOFTER-PHONE-LOGIN-AUTH":login_auth})
         # 正则匹配出每条博客的信息并增加到数组all_blog_info
         new_blogs_info = re.findall(r"s[\d]*.blogId.*\n.*noticeLinkTitle", page_data)
         all_blog_info += new_blogs_info
@@ -397,9 +409,10 @@ def deal_file(action):
 
 
 # 整理各种参数，启动程序
-def run(author_url, start_time, end_time, target_tags, tags_filter_mode, file_update_interval):
+def run(author_url, login_auth, start_time, end_time, target_tags, tags_filter_mode, file_update_interval):
     author_page_parse = etree.HTML(
-        requests.get(author_url+"/view", headers=useragentutil.get_headers()).content.decode("utf-8"))
+        requests.get(author_url + "/view", headers=useragentutil.get_headers(),
+                     cookies={"LOFTER-PHONE-LOGIN-AUTH": login_auth}).content.decode("utf-8"))
     # id是是获取归档页面需要的一个参数，纯数字；ip是作者在lofter的三级域名，由作者注册时设定
     author_id = author_page_parse.xpath("//body//iframe[@id='control_frame']/@src")[0].split("blogId=")[1]
     author_ip = re.search(r"http[s]*://(.*).lofter.com/", author_url).group(1)
@@ -446,8 +459,9 @@ def run(author_url, start_time, end_time, target_tags, tags_filter_mode, file_up
                          file_update_interval)
     else:
         print("开始获取归档页面数据，链接 %s (不能直接点开)" % archive_url)
-        blog_infos = parse_archive_page(url=archive_url, data=data, header=head, author_url=author_url,
-                                        query_num=query_num, start_time=start_time, end_time=end_time)
+        blog_infos = parse_archive_page(url=archive_url, login_auth=login_auth, data=data, header=head,
+                                        author_url=author_url, query_num=query_num, start_time=start_time,
+                                        end_time=end_time)
         parsed_blogs_info = get_file_contetn(dir_path + "/blogs_info_parsed.json")
         file_update(dir_path + "/blogs_info.json", blog_infos)
         print("归档页面数据保存完毕,开始解析博客页面")
@@ -473,11 +487,13 @@ if __name__ == "__main__":
 
     # 作者的主页地址   示例 https://ishtartang.lofter.com/   *最后的'/'不能少
     author_url = "https://zhengjingdeluobu.lofter.com/"
+    # 登录授权码，获取方式见 https://github.com/IshtarTang/lofterSpider/blob/master/笔记图/README/如何获取login_auth.png
+    login_auth = ""
 
     # ### 自定义部分 ### #
 
     # 设定爬取哪个时间段的博客，空值为不设定 格式："yyyy-MM-dd"
-    start_time = ""
+    start_time = "2022-01-01"
     end_time = ""
 
     # 指定保留有哪些tag的博客，空值为不过滤
@@ -488,4 +504,5 @@ if __name__ == "__main__":
     # 间隔多久把数据刷新到文件中一次
     file_update_interval = 10
 
-    run(author_url, start_time, end_time, target_tags, tags_filter_mode, file_update_interval)
+    run(author_url, login_auth, start_time, end_time,
+        target_tags, tags_filter_mode, file_update_interval)

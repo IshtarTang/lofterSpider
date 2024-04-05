@@ -19,12 +19,12 @@ def get_parse(url):
     return parse
 
 
-def parse_archive_page(url, header, data, author_url, author_name, query_num, start_time, end_time):
+def parse_archive_page(url, login_auth, header, data, author_url, author_name, query_num, start_time, end_time):
     all_blog_info = []
 
     while True:
         print("获取归档页面信息，当前请求的时间戳参数为 %s" % data["c0-param2"])
-        page_data = l4_author_img.post_content(url=url, data=data, head=header)
+        page_data = l4_author_img.post_content(url=url, data=data, head=header,cookies_dict={"LOFTER-PHONE-LOGIN-AUTH":login_auth})
         # 正则匹配出每条博客的信息并增加到数组all_blog_info
         # new_blogs_info = re.findall(r"s[\d]*.blogId.*\n.*noticeLinkTitle", page_data)
         new_blogs_info = re.findall(r"s[\d]*.blogId.*\n.*\n", page_data)
@@ -266,9 +266,11 @@ def save_file(blog_infos, author_name, author_ip, get_comm, additional_break):
     return all_file_name
 
 
-def run(author_url, get_comm, additional_break, start_time, end_time, merge_titles, additional_chapter_index):
+def run(author_url, login_auth, get_comm, additional_break, start_time, end_time, merge_titles,
+        additional_chapter_index):
     author_page_parse = etree.HTML(
-        requests.get(author_url+"/view", headers=useragentutil.get_headers()).content.decode("utf-8"))
+        requests.get(author_url + "/view", headers=useragentutil.get_headers(),
+                     cookies={"LOFTER-PHONE-LOGIN-AUTH": login_auth}).content.decode("utf-8"))
     # id是是获取归档页面需要的一个参数，纯数字；ip是作者在lofter的三级域名，由作者注册时设定
     author_id = author_page_parse.xpath("//body//iframe[@id='control_frame']/@src")[0].split("blogId=")[1]
     author_ip = re.search(r"http[s]*://(.*).lofter.com/", author_url).group(1)
@@ -289,7 +291,8 @@ def run(author_url, get_comm, additional_break, start_time, end_time, merge_titl
     arthicle_path = "./dir/article/{}".format(author_name)
 
     # 博客信息爬取
-    blog_infos = parse_archive_page(archive_url, head, data, author_url, author_name, query_num, start_time, end_time)
+    blog_infos = parse_archive_page(archive_url, login_auth, head, data, author_url,
+                                    author_name, query_num, start_time, end_time)
 
     if not blog_infos:
         print("作者主页中无文本/文字博客，无需爬取，程序退出")
@@ -449,7 +452,10 @@ def merge_chapter_al(merge_titles, file_path, additional_chapter_index):
 
 if __name__ == '__main__':
     # 作者的主页地址   示例 https://ishtartang.lofter.com/   *最后的'/'不能少
-    author_url = "https://jimohechu.lofter.com/"
+    author_url = "https://kong7217.lofter.com/"
+
+    # 登录授权码，获取方式见 https://github.com/IshtarTang/lofterSpider/blob/master/笔记图/README/如何获取login_auth.png
+    login_auth = ""
 
     # ### 自定义部分 ### #
 
@@ -469,4 +475,5 @@ if __name__ == '__main__':
     # 1启动，0关闭，chapter_merge_title为空时无效
     additional_chapter_index = 0
 
-    run(author_url, get_comm, additional_break, start_time, end_time, chapter_merge_title, additional_chapter_index)
+    run(author_url, login_auth, get_comm, additional_break, start_time, end_time, chapter_merge_title,
+        additional_chapter_index)
