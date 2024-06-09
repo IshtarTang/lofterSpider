@@ -9,7 +9,7 @@ import l4_author_img
 
 
 # 博客发表时间需要从归档页面获取，内容较长，所以单独分出一个方法
-def get_time(blog_url, author_id):
+def get_time(blog_url, author_id, login_key, login_auth):
     print("准备从归档页面获取时间", end="    ")
     author_url = blog_url.split("/post")[0]
     archive_url = author_url + "/dwr/call/plaincall/ArchiveBean.getArchivePostByTime.dwr"
@@ -19,7 +19,8 @@ def get_time(blog_url, author_id):
     flag = False
     the_blog_info = ""
     while True:
-        page_data = l4_author_img.post_content(url=archive_url, data=data, head=header)
+        page_data = l4_author_img.post_content(url=archive_url, data=data, head=header,
+                                               cookies_dict={login_key: login_auth})
         # 正则匹配出每条博客的信息
         blogs_info = re.findall(r"s[\d]*.blogId.*\n.*noticeLinkTitle", page_data)
         # 循环每条信息
@@ -50,7 +51,7 @@ def get_time(blog_url, author_id):
 
 
 # 解析博客页面，返回图片信息
-def parse_blogs_info(blogs_urls):
+def parse_blogs_info(blogs_urls, login_key, login_auth):
     global pre_page_last_img_info
     imgs_info = []
     blog_num = 0
@@ -59,13 +60,14 @@ def parse_blogs_info(blogs_urls):
     for blog_url in blogs_urls:
         print("博客 %s 开始解析" % (blog_url))
         content = requests.get(blog_url, headers=useragentutil.get_headers()).content.decode("utf-8")
-        author_view_url = blog_url.split("/post")[0]+"/view"
-        author_view_parse = etree.HTML(requests.get(author_view_url).content.decode("utf-8"))
+        author_view_url = blog_url.split("/post")[0] + "/view"
+        author_view_parse = etree.HTML(
+            requests.get(author_view_url, cookies={login_key: login_auth}).content.decode("utf-8"))
         author_name = author_view_parse.xpath("//h1/a/text()")[0]
         author_id = author_view_parse.xpath("//body//iframe[@id='control_frame']/@src")[0].split("blogId=")[1]
         author_ip = re.search(r"http(s)*://(.*).lofter.com/", blog_url).group(2)
         # 获取博客发表时间
-        public_time = get_time(blog_url, author_id)
+        public_time = get_time(blog_url, author_id, login_key, login_auth)
 
         # 不同作者主页会有不同页面结构，所以没有使用xpath而是直接用正则匹配出所有的图片链接
         # imgs_url = re.findall('"(http[s]{0,1}://imglf\d{0,1}.nosdn\d*.[0-9]{0,3}.net.*?)"', content)
@@ -137,8 +139,11 @@ def download_img(imgs_info):
 
 
 if __name__ == '__main__':
+    from login_info import login_auth, login_key
+
+    # 启动程序前请先填写 login_info.py
     with open("./dir/img_list") as op:
         blog_urls = op.readlines()
     blog_urls = list(map(lambda x: x.replace("\n", ""), blog_urls))
-    imgs_info = parse_blogs_info(blog_urls)
+    imgs_info = parse_blogs_info(blog_urls, login_key, login_auth)
     download_img(imgs_info)

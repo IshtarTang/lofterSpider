@@ -60,7 +60,7 @@ def get_time_and_title(blog_url, author_id):
 
 
 # 解析博客页面，返回图片信息
-def save_files(blogs_urls):
+def save_files(blogs_urls, login_key, login_auth):
     global pre_page_last_img_info
     imgs_info = []
     blog_num = 0
@@ -72,19 +72,20 @@ def save_files(blogs_urls):
         blog_parse = get_parse(blog_url)
 
         author_view_url = blog_url.split("/post")[0] + "/view"
-        print(author_view_url)
-        author_view_parse = etree.HTML(requests.get(author_view_url).content.decode("utf-8"))
+        author_view_parse = etree.HTML(
+            requests.get(author_view_url, cookies={login_key: login_auth}).content.decode("utf-8"))
         author_id = author_view_parse.xpath("//body//iframe[@id='control_frame']/@src")[0].split("blogId=")[1]
         author_name = author_view_parse.xpath("//h1/a/text()")[0]
 
         time_and_title = get_time_and_title(blog_url, author_id)
         title = time_and_title[1]
         blog_type = "article" if title else "text"
-        article_head = "{} by {}[{}]\n发表时间：{}".format(title, author_name, author_ip, time_and_title[0])+"\n"+"原文链接： "+blog_url
+        article_head = "{} by {}[{}]\n发表时间：{}".format(title, author_name, author_ip,
+                                                      time_and_title[0]) + "\n" + "原文链接： " + blog_url
         if title:
             file_name = title + " by " + author_name + ".txt"
         else:
-            file_name = author_name+" "+time_and_title[0]+".txt"
+            file_name = author_name + " " + time_and_title[0] + ".txt"
         file_name = file_name.replace("/", "&").replace("|", "&").replace("\\", "&").replace("<", "《") \
             .replace(">", "》").replace(":", "：").replace('"', '”').replace("?", "？").replace("*", "·"). \
             replace("\n", "").replace("(", "（").replace(
@@ -94,7 +95,7 @@ def save_files(blogs_urls):
         print("文字匹配模板为模板{}".format(template_id))
         if template_id == 0:
             print("文字匹配模板是根据作者主页自动匹配的，模板0为通用匹配模板，除了文章主体之外可能会爬到一些其他的内容，也有可能出现文章部分内容缺失")
-        article_content = parse_template.get_content(blog_parse, template_id, title,blog_type)
+        article_content = parse_template.get_content(blog_parse, template_id, title, blog_type)
         article = article_head + "\n\n\n\n" + article_content
         with open("./dir/article/this/{}".format(file_name), "w", encoding="utf-8") as op:
             op.write(article)
@@ -102,13 +103,16 @@ def save_files(blogs_urls):
 
 
 if __name__ == '__main__':
+    from login_info import login_auth, login_key
+
+    # 启动程序前请先填写 login_info.py
     path = "./dir/article"
     arthicle_path = "./dir/article/this"
     for x in [path, arthicle_path]:
         if not os.path.exists(x):
-            os.makedirs( x)
+            os.makedirs(x)
 
     with open("./dir/txt_list") as op:
         blog_urls = op.readlines()
     blog_urls = list(map(lambda x: x.replace("\n", ""), blog_urls))
-    archives_info = save_files(blog_urls)
+    archives_info = save_files(blog_urls, login_key, login_auth)

@@ -74,7 +74,7 @@ def get_logion_session(login_info):
     # 主页参数设置
     homepage_url = "http://www.lofter.com/"
     cookies = RequestsCookieJar()
-    cookies.set("LOFTER-PHONE-LOGIN-AUTH",login_info["login auth"])
+    cookies.set(login_info["login_key"], login_info["login auth"])
     session.cookies = cookies
 
     # 请求主页
@@ -1123,6 +1123,7 @@ def run(url, mode, save_mode, classify_by_tag, prior_tags, agg_non_prior_tag, lo
 
 
 if __name__ == '__main__':
+    # 启动程序前请先填写 login_info.py
     # 基础设置  -------------------------------------------------------- #
     url = "https://www.lofter.com/tag/%E8%8C%82%E7%81%B5/new"
     # 运行模式
@@ -1146,8 +1147,8 @@ if __name__ == '__main__':
     phone_number = "18975*******"
     # 密码
     password = "*****"
-    # 登录授权码
-    login_auth = "DJmZ-rO1znUFSCRcBjT0AsHxTGmLbqI26O-RSN12Rl-v3N5D9mJsZX-KsrBEdbB3nQwFZqd7TMr6%0AWNf-BulgwCF*****"
+    from login_info import login_auth, login_key
+
     # 最早时间指定 格式：2019-10-1
     start_time = "2020-11-12"
     # 上次运行时间 2020-11-14
@@ -1171,6 +1172,6 @@ if __name__ == '__main__':
     file_path = "./dir"
 
     # 运行
-    login_info = {"phone num": phone_number, "password": password, "login auth": login_auth}
+    login_info = {"phone num": phone_number, "password": password, "login_key": login_key, "login auth": login_auth}
     run(url, mode, save_mode, classify_by_tag, prior_tags, agg_non_prior_tag, login_info, start_time, tag_filt_num,
         min_hot, print_level, save_img_in_text, file_path)
