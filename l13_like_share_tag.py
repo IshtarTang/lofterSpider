@@ -42,7 +42,7 @@ def write_img(file, filename, path):
 def get_logion_session(login_info):
     """
     获取一个登录过的session
-    :param login_info: 手机号，密码，登录授权码构成的字典
+    :param login_info:
     :return: session
     """
     headers = {
@@ -59,21 +59,15 @@ def get_logion_session(login_info):
     # 请求登录页
     logion_page_url = "http://www.lofter.com/login"
     login_page_response = session.get(logion_page_url, params=payload)
-    # write_html(login_page_response.content.decode("utf-8"))
     print("登录页状态码 {}".format(login_page_response.status_code))
 
     # 改请求头和cookies
     headers["Referer"] = "http://www.lofter.com/login"
     session.headers = headers
 
-    logion_payload = {'phone': login_info["phone num"], 'passport': login_info["password"], 'clientType': '0',
-                      'deviceType': '3',
-                      'Target': 'www.lofter.com',
-                      'callback': 'loft.m.tellogin.g.jsonplogin'}
-
     # 主页参数设置
     homepage_url = "http://www.lofter.com/"
-    cookies = RequestsCookieJar()
+    cookies = session.cookies
     cookies.set(login_info["login_key"], login_info["login auth"])
     session.cookies = cookies
 
@@ -85,7 +79,7 @@ def get_logion_session(login_info):
     return session
 
 
-def make_data(mode, url=""):
+def make_data(mode, session, url=""):
     """
     :param mode: 模式，支持的模式有share like1 like2 tag
     :param url:  生成data需要用到url，share like1 需要的是用户主页的url，tag需要的是tag页的url。like2不会用到，因为信息在cookies种
@@ -104,12 +98,15 @@ def make_data(mode, url=""):
     got_num = 0
     if mode == "share" or mode == "like1":
         userId = ""
-        user_page_parse = etree.HTML(
-            requests.get(url, headers=useragentutil.get_headers()).content.decode("utf-8"))
+        host = re.search("https://(.*?)/", url).group(1)
+        headers = session.headers
+        headers["Host"] = host
+        x = session.get(url, headers=headers).content.decode("utf-8")
+        user_page_parse = etree.HTML(x)
         try:
             userId = user_page_parse.xpath("//body/iframe[@id='control_frame']/@src")[0].split("blogId=")[1]
         except:
-            print("\n链接与模式不匹配")
+            print("\n用户主页登录验证失败")
             exit()
         data_parme = {
             'c0-scriptName': 'BlogBean',
@@ -230,12 +227,14 @@ def save_all_fav(url, mode, file_path, login_info, start_time):
         print("requests_url 模式匹配错误 当前模式{}".format(mode))
         exit()
     # like2需要登录的session,其他模式不用
-    if mode == "like2":
-        session = get_logion_session(login_info)
-    else:
-        session = requests.session()
-        session.headers = make_header(mode, url)
-    data = make_data(mode, url)
+    # if mode == "like2":
+    #     session = get_logion_session(login_info)
+    # else:
+    #     session = requests.session()
+    #     session.headers = make_header(mode, url)
+
+    session = get_logion_session(login_info)
+    data = make_data(mode, session, url)
 
     fav_info = []
     if start_time:
@@ -1125,9 +1124,9 @@ def run(url, mode, save_mode, classify_by_tag, prior_tags, agg_non_prior_tag, lo
 if __name__ == '__main__':
     # 启动程序前请先填写 login_info.py
     # 基础设置  -------------------------------------------------------- #
-    url = "https://www.lofter.com/tag/%E8%8C%82%E7%81%B5/new"
+    url = "https://ishtartang.lofter.com/tag/%E5%88%BA%E5%AE%A2%E4%BF%A1%E6%9D%A1"
     # 运行模式
-    mode = "tag"
+    mode = "like2"
 
     # 保存哪些内容，1为开启，0为关闭
     # article-文章  text-文本   long article-长文章     img-保存图片
@@ -1142,15 +1141,10 @@ if __name__ == '__main__':
     # 非优先tag聚合：
     agg_non_prior_tag = 0
 
-    # like2模式设置   --------------------------------------------------- #
-    # 手机号
-    phone_number = "18975*******"
-    # 密码
-    password = "*****"
     from login_info import login_auth, login_key
 
     # 最早时间指定 格式：2019-10-1
-    start_time = "2020-11-12"
+    start_time = "2024-06-01"
     # 上次运行时间 2020-11-14
 
     # tag模式的最低热度限制  --------------------------------------------- #
@@ -1172,6 +1166,6 @@ if __name__ == '__main__':
     file_path = "./dir"
 
     # 运行
-    login_info = {"phone num": phone_number, "password": password, "login_key": login_key, "login auth": login_auth}
+    login_info = {"login_key": login_key, "login auth": login_auth}
     run(url, mode, save_mode, classify_by_tag, prior_tags, agg_non_prior_tag, login_info, start_time, tag_filt_num,
         min_hot, print_level, save_img_in_text, file_path)
