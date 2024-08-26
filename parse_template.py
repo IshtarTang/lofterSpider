@@ -1,6 +1,5 @@
 import re
 
-
 """
 //div[@class="content"]			基本版		有标题	http://yangliu12.lofter.com/post/30ee0643_1c98d95fa
 //div[@class="cont"]/div[@class="text"]	作者头像在上	有标题	http://sxhyl.lofter.com/post/1e77aca2_1c6d7acdc
@@ -32,9 +31,14 @@ import re
 def all_purpose_template(parse, title, blog_type, join_word=""):
     lines = parse.xpath('/html//text()')
     content = join_word.join(lines)
+    with open("test.txt", "w", encoding="utf-8") as op:
+        op.write(content)
     if blog_type == "article":
-        title = title.encode("gbk", errors="replace").decode("gbk", errors="replace").replace("?", "")
-        content = content.split(title, 2)[2]
+        try:
+            title = title.encode("utf-8", errors="replace").decode("utf-8", errors="replace").replace("?", "")
+            content = content.split(title, 2)[2]
+        except:
+            pass
         content = re.split("\s评论\s", content)[0].encode("utf-8", errors="replace").decode("utf-8", errors="replace")
     else:
         content = content.split("评论")[0].encode("utf-8", errors="replace").decode("utf-8", errors="replace")
@@ -118,10 +122,10 @@ def get_content(parse, template_id, title, blog_type, join_word=""):
         content = content.replace(title, "", 1)
     if template_id == 2:
         content = template2(parse, join_word)
-        content = content.replace(title, "",1)
+        content = content.replace(title, "", 1)
     if template_id == 3:
         content = template3(parse, join_word)
-        content = content.replace(title, "",1)
+        content = content.replace(title, "", 1)
     if template_id == 4:
         content = template4(parse, join_word)
     if template_id == 5:

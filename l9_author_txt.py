@@ -13,6 +13,10 @@ import parse_template
 import l4_author_img
 import l13_like_share_tag
 
+from login_info import login_auth, login_key
+
+import ssl
+ssl._create_default_https_context = ssl._create_unverified_context
 
 def get_parse(url):
     content = requests.get(url, headers=useragentutil.get_headers()).content
@@ -20,7 +24,7 @@ def get_parse(url):
     return parse
 
 
-def parse_archive_page(url, login_key, login_auth, header, data, author_url, author_name, query_num, start_time,
+def parse_archive_page(url, header, data, author_url, author_name, query_num, start_time,
                        end_time):
     all_blog_info = []
 
@@ -117,7 +121,13 @@ def save_file(blog_infos, author_name, author_ip, get_comm, additional_break):
     # 开始保存
 
     arthicle_path = "./dir/article/{}".format(author_name)
+    sesssion = requests.session()
+    sesssion.headers = useragentutil.get_headers()
+    cookies = sesssion.cookies
+    cookies.set(login_key, login_auth)
+    print(cookies)
     for blog_info in blog_infos:
+        time.sleep(random.random())
         # 信息提取
         title = blog_info["title"]
         print_title = blog_info["print_title"]
@@ -132,7 +142,8 @@ def save_file(blog_infos, author_name, author_ip, get_comm, additional_break):
         else:
             article_head = "{}\n原文链接： {}".format(title, url)
         # 正文
-        content = requests.get(url, headers=useragentutil.get_headers()).content
+        content = requests.get(url, headers=useragentutil.get_headers(),
+                               cookies={login_key: login_auth}).content
         parse = etree.HTML(content)
         join_word = "\n" * additional_break
         article_content = parse_template.get_content(parse, template_id, title, blog_type, join_word)
@@ -269,7 +280,7 @@ def save_file(blog_infos, author_name, author_ip, get_comm, additional_break):
     return all_file_name
 
 
-def run(author_url, login_key, login_auth, get_comm, additional_break, start_time, end_time, merge_titles,
+def run(author_url, get_comm, additional_break, start_time, end_time, merge_titles,
         additional_chapter_index):
     author_page_parse = etree.HTML(
         requests.get(author_url + "/view", headers=useragentutil.get_headers(),
@@ -294,7 +305,7 @@ def run(author_url, login_key, login_auth, get_comm, additional_break, start_tim
     arthicle_path = "./dir/article/{}".format(author_name)
 
     # 博客信息爬取
-    blog_infos = parse_archive_page(archive_url, login_key, login_auth, head, data, author_url,
+    blog_infos = parse_archive_page(archive_url, head, data, author_url,
                                     author_name, query_num, start_time, end_time)
 
     if not blog_infos:
@@ -454,11 +465,13 @@ def merge_chapter_al(merge_titles, file_path, additional_chapter_index):
 
 
 if __name__ == '__main__':
-    from login_info import login_auth, login_key
+    os.environ['HTTPS_PROXY'] = 'http://127.0.0.1:7900'
+    os.environ['HTTP_PROXY'] = 'http://127.0.0.1:7900'
+
     # 启动程序前请先填写 login_info.py
 
     # 作者的主页地址   示例 https://ishtartang.lofter.com/   *最后的'/'不能少
-    author_url = "https://kong7217.lofter.com/"
+    author_url = "https://rp1945602.lofter.com/"
 
     # ### 自定义部分 ### #
 
@@ -478,5 +491,5 @@ if __name__ == '__main__':
     # 1启动，0关闭，chapter_merge_title为空时无效
     additional_chapter_index = 0
 
-    run(author_url, login_key, login_auth, get_comm, additional_break, start_time, end_time, chapter_merge_title,
+    run(author_url, get_comm, additional_break, start_time, end_time, chapter_merge_title,
         additional_chapter_index)

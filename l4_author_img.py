@@ -8,6 +8,7 @@ from urllib.parse import unquote
 from lxml.html import etree
 import useragentutil
 from requests.cookies import RequestsCookieJar
+from login_info import login_auth, login_key
 
 
 def post_content(url, data, head, cookies_dict=None):
@@ -156,7 +157,7 @@ def tag_filter(blog_tags, target_tags, mode):
 
 
 # 获取归档页面信息
-def parse_archive_page(url, login_key, login_auth, header, data, author_url, query_num, start_time, end_time):
+def parse_archive_page(url,  header, data, author_url, query_num, start_time, end_time):
     all_blog_info = []
 
     while True:
@@ -409,7 +410,7 @@ def deal_file(action):
 
 
 # 整理各种参数，启动程序
-def run(author_url, login_key, login_auth, start_time, end_time, target_tags, tags_filter_mode, file_update_interval):
+def run(author_url,  start_time, end_time, target_tags, tags_filter_mode, file_update_interval):
     author_page_parse = etree.HTML(
         requests.get(author_url + "/view", headers=useragentutil.get_headers(),
                      cookies={login_key: login_auth}).content.decode("utf-8"))
@@ -459,7 +460,7 @@ def run(author_url, login_key, login_auth, start_time, end_time, target_tags, ta
                          file_update_interval)
     else:
         print("开始获取归档页面数据，链接 %s (不能直接点开)" % archive_url)
-        blog_infos = parse_archive_page(url=archive_url, login_key=login_key, login_auth=login_auth, data=data,
+        blog_infos = parse_archive_page(url=archive_url,  data=data,
                                         header=head, author_url=author_url, query_num=query_num, start_time=start_time,
                                         end_time=end_time)
         parsed_blogs_info = get_file_contetn(dir_path + "/blogs_info_parsed.json")
@@ -482,7 +483,6 @@ def run(author_url, login_key, login_auth, start_time, end_time, target_tags, ta
 
 
 if __name__ == "__main__":
-    from login_info import login_auth, login_key
     # 一个会出bug的主页 https://silhouette-of-wolf.lofter.com/
     # 作者在头像下放了tag，导致tag过滤失效，所有的内容都会被保存（这只是作者的笔记，其他人不用管）
 
@@ -505,5 +505,5 @@ if __name__ == "__main__":
     # 间隔多久把数据刷新到文件中一次
     file_update_interval = 10
 
-    run(author_url, login_key, login_auth, start_time, end_time,
+    run(author_url,  start_time, end_time,
         target_tags, tags_filter_mode, file_update_interval)
