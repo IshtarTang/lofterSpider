@@ -16,12 +16,6 @@ import l13_like_share_tag
 from login_info import login_auth, login_key
 
 import ssl
-ssl._create_default_https_context = ssl._create_unverified_context
-
-def get_parse(url):
-    content = requests.get(url, headers=useragentutil.get_headers()).content
-    parse = etree.HTML(content)
-    return parse
 
 
 def parse_archive_page(url, header, data, author_url, author_name, query_num, start_time,
@@ -109,7 +103,9 @@ def save_file(blog_infos, author_name, author_ip, get_comm, additional_break):
     all_file_name = []
     print("开始保存文章内容")
     # 拿一篇出来，测试匹配模板
-    first_parse = get_parse(blog_infos[0]["url"])
+    content = requests.get(blog_infos[0]["url"], headers=useragentutil.get_headers(),
+                           cookies={login_key: login_auth}).content
+    first_parse = etree.HTML(content)
     template_id = parse_template.matcher(first_parse)
     print("文字匹配模板为模板{}".format(template_id))
     if template_id == 0:
@@ -125,7 +121,6 @@ def save_file(blog_infos, author_name, author_ip, get_comm, additional_break):
     sesssion.headers = useragentutil.get_headers()
     cookies = sesssion.cookies
     cookies.set(login_key, login_auth)
-    print(cookies)
     for blog_info in blog_infos:
         time.sleep(random.random())
         # 信息提取
@@ -465,13 +460,13 @@ def merge_chapter_al(merge_titles, file_path, additional_chapter_index):
 
 
 if __name__ == '__main__':
-    os.environ['HTTPS_PROXY'] = 'http://127.0.0.1:7900'
-    os.environ['HTTP_PROXY'] = 'http://127.0.0.1:7900'
+    # os.environ['HTTPS_PROXY'] = 'http://127.0.0.1:7900'
+    # os.environ['HTTP_PROXY'] = 'http://127.0.0.1:7900'
 
     # 启动程序前请先填写 login_info.py
 
     # 作者的主页地址   示例 https://ishtartang.lofter.com/   *最后的'/'不能少
-    author_url = "https://rp1945602.lofter.com/"
+    author_url = "https://nananago.lofter.com/"
 
     # ### 自定义部分 ### #
 
