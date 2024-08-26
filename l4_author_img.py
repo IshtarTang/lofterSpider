@@ -243,7 +243,7 @@ def parse_blogs_info(blogs_info, parsed_blogs_info, author_name, author_ip, targ
         blog_url = blogs_info[0]["blog_url"]
         img_time = blogs_info[0]["time"]
         print("博客 %s 开始解析" % blog_url, end="  ")
-        content = requests.get(blog_url, headers=useragentutil.get_headers()).content.decode("utf-8")
+        content = requests.get(blog_url, headers=useragentutil.get_headers(),cookies={login_key:login_auth}).content.decode("utf-8")
 
         blog_tags = re.findall(r'"http[s]{0,1}://.*?.lofter.com/tag/(.*?)"', content)
         blog_tags = list(map(lambda x: unquote(x, "utf-8").replace("\xa0", " "), blog_tags))
@@ -489,12 +489,12 @@ if __name__ == "__main__":
     # 启动程序前请先填写 login_info.py
 
     # 作者的主页地址   示例 https://ishtartang.lofter.com/   *最后的'/'不能少
-    author_url = "https://zhengjingdeluobu.lofter.com/"
+    author_url = "https://ishtartang.lofter.com/"
 
     # ### 自定义部分 ### #
 
     # 设定爬取哪个时间段的博客，空值为不设定 格式："yyyy-MM-dd"
-    start_time = "2023-01-01"
+    start_time = ""
     end_time = ""
 
     # 指定保留有哪些tag的博客，空值为不过滤
