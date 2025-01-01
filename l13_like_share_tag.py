@@ -837,10 +837,11 @@ def save_img(imgs_info, file_path, img_save_info, classify_by_tag, prior_tags, a
             re_url = re.findall('http[s]{0,1}://imglf\d{0,1}.lf\d*.[0-9]{0,3}.net.*', img_url)
 
             if not re_url:
-                print("\n图片 {} 不是lofter站内图 ".format(img_url), end="\t")
+                print("\n图片 {} 不是lofter站内图".format(img_url), end="\t")
             try:
                 tmp_headers = useragentutil.get_headers()
-                tmp_headers["Referer"] = img_info["url"].split("post")[0]
+                if re_url:
+                    tmp_headers["Referer"] = img_info["url"].split("post")[0]
                 img = requests.get(img_url, headers=tmp_headers).content
 
             except:

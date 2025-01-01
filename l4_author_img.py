@@ -203,7 +203,7 @@ def parse_archive_page(url,  header, data, author_url, query_num, start_time, en
 
         # 博客的编号 比如https://lindujiu.lofter.com/post/423a9c_1c878d5e6 的 423a9c_1c878d5e6
         blog_index = re.search(r's[\d]*.permalink="(.*)"', blog_info).group(1)
-        blog_info_dic["blog_url"] = author_url + "/post/" + blog_index
+        blog_info_dic["blog_url"] = author_url + "post/" + blog_index
 
         # 获取时间
         time_local = time.localtime(int(int(timestamp) / 1000))
@@ -243,7 +243,9 @@ def parse_blogs_info(blogs_info, parsed_blogs_info, author_name, author_ip, targ
         blog_url = blogs_info[0]["blog_url"]
         img_time = blogs_info[0]["time"]
         print("博客 %s 开始解析" % blog_url, end="  ")
-        content = requests.get(blog_url, headers=useragentutil.get_headers(),cookies={login_key:login_auth}).content.decode("utf-8")
+        tmp_headers = useragentutil.get_headers()
+        tmp_headers["Referer"] =author_url+"view"
+        content = requests.get(blog_url, tmp_headers,cookies={login_key:login_auth}).content.decode("utf-8")
 
         blog_tags = re.findall(r'"http[s]{0,1}://.*?.lofter.com/tag/(.*?)"', content)
         blog_tags = list(map(lambda x: unquote(x, "utf-8").replace("\xa0", " "), blog_tags))
@@ -320,7 +322,7 @@ def parse_blogs_info(blogs_info, parsed_blogs_info, author_name, author_ip, targ
         del blogs_info[0]
         print("解析完成，获取到图片链接%d，总获取图片数%d，已解析完成%d个链接（本次运行中已解析%d个链接），剩余%d" % (
             count, len(imgs_info), parsed_num, blog_num + 1, len(blogs_info)))
-
+        time.sleep(random.random())
         # print(imgs_url)
         # print("--------"*10)
 
@@ -330,14 +332,15 @@ def parse_blogs_info(blogs_info, parsed_blogs_info, author_name, author_ip, targ
             file_update("./dir/author_img_file/imgs_info.json", imgs_info)
             file_update("./dir/author_img_file/blogs_info_parsed.json", parsed_blogs_info)
             print("文件刷新")
-            time.sleep(random.randint(1, 2))
+            time.sleep(random.random()*random.randint(1, 3))
+
 
     with open("./dir/author_img_file/blogs_info.json", "w") as op:
         op.write("finished")
 
 
 # 图片下载
-def download_img(imgs_info, imgs_info_saved, author_name, author_ip, file_update_interval):
+def download_img(imgs_info, imgs_info_saved, author_name, author_ip,author_url, file_update_interval):
     """
     :param imgs_info: 图片信息
     :param imgs_info_saved: 已完成保存的图片信息
@@ -361,7 +364,9 @@ def download_img(imgs_info, imgs_info_saved, author_name, author_ip, file_update
         pic_url = imgs_info[0]["img_url"]
         img_path = dir_path + "/" + pic_name_in_filename
         print("获取图片 %s" % (pic_url))
-        content = requests.get(pic_url, headers=useragentutil.get_headers()).content
+        tmp_headers = useragentutil.get_headers()
+        tmp_headers["Referer"]= author_url
+        content = requests.get(pic_url, tmp_headers).content
         with open(img_path, "wb") as op:
             op.write(content)
 
@@ -475,7 +480,7 @@ def run(author_url,  start_time, end_time, target_tags, tags_filter_mode, file_u
     else:
         imgs_info = get_file_contetn(dir_path + "/imgs_info.json")
         imgs_info_saved = get_file_contetn(dir_path + "/imgs_info_saved.json")
-        download_img(imgs_info, imgs_info_saved, author_name, author_ip, file_update_interval)
+        download_img(imgs_info, imgs_info_saved, author_name, author_ip, author_url,file_update_interval)
         print("所有图片保存完毕")
 
     deal_file("del")
@@ -489,7 +494,7 @@ if __name__ == "__main__":
     # 启动程序前请先填写 login_info.py
 
     # 作者的主页地址   示例 https://ishtartang.lofter.com/   *最后的'/'不能少
-    author_url = "https://ishtartang.lofter.com/"
+    author_url = "https://nongyuzhuye.lofter.com/"
 
     # ### 自定义部分 ### #
 
