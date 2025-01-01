@@ -366,9 +366,8 @@ def infor_formater(favs_info, fav_str, mode, file_path, start_time, min_hot, pri
         # 文件中不允许出现的字符，在用于文件名时要全部替换掉，英文括号换成中文括号，避免在检查文件名重复时被切割
         author_name_in_filename = author_name.replace("/", "&").replace("|", "&").replace("\r", " ").replace(
             "\\", "&").replace("<", "《").replace(">", "》").replace(":", "：").replace('"', '”').replace("?", "？") \
-            .replace("*", "·").replace("\n", "").replace("*", "·").replace("\n", "").replace("(", "（").replace(")",
-                                                                                                               "）").replace(
-            "\t", " ").strip()
+            .replace("*", "·").replace("\n", "").replace("*", "·").replace("\n", "")\
+            .replace("(", "（").replace(")","）").replace("\t", " ").strip()
         author_name_in_filename = re.compile('[\\x00-\\x08\\x0b-\\x0c\\x0e-\\x1f]').sub(' ', author_name_in_filename)
         blog_info["author name in filename"] = author_name_in_filename
         # 作者ip
@@ -411,13 +410,12 @@ def infor_formater(favs_info, fav_str, mode, file_path, start_time, min_hot, pri
             urls_str = urls_search.group(1).replace("\\", "").replace("false", "False").replace("true", "True")
             urls_infos = eval(urls_str)
             for url_info in urls_infos:
-                # raw是没有任何后缀的原图，但有的没有raw，取orign
-                try:
-                    url = url_info["raw"]
-                except:
+                # raw是没有任何后缀的原图，优先取raw
+                url = url_info.get("raw","")
+                # 有的没有raw，netease之前没写注释不知道是啥，imglf3是不能直接访问的，都取orign删后缀
+                if not url or "netease" in url or "imglf3" in url:
                     url = url_info["orign"].split("?imageView")[0]
-                if "netease" in url:
-                    url = url_info["orign"].split("?imageView")[0]
+
                 img_urls.append(url)
         blog_info["img urls"] = img_urls
 
@@ -1124,9 +1122,9 @@ def run(url, mode, save_mode, classify_by_tag, prior_tags, agg_non_prior_tag, lo
 if __name__ == '__main__':
     # 启动程序前请先填写 login_info.py
     # 基础设置  -------------------------------------------------------- #
-    url = "https://ishtartang.lofter.com/tag/%E5%88%BA%E5%AE%A2%E4%BF%A1%E6%9D%A1"
+    url = "https://www.lofter.com/tag/%E6%80%AA%E6%83%B3%E5%94%AE/total"
     # 运行模式
-    mode = "like2"
+    mode = "tag"
 
     # 保存哪些内容，1为开启，0为关闭
     # article-文章  text-文本   long article-长文章     img-保存图片
@@ -1134,7 +1132,7 @@ if __name__ == '__main__':
 
     # 自动整理设置    --------------------------------------------------- #
     # 按tag分类：0关闭 1启动
-    classify_by_tag = 1
+    classify_by_tag = 0
 
     # 优先tag:该项不为空时为启动该功能，未启动按tag分类时该功能无效
     prior_tags = []
@@ -1143,11 +1141,10 @@ if __name__ == '__main__':
 
     from login_info import login_auth, login_key
 
-    # 最早时间指定 格式：2019-10-1
-    start_time = "2024-06-01"
-    # 上次运行时间 2020-11-14
+    # 最早时间指定，仅like2模式有效，格式：yyyy-mm-dd 例：2025-01-01
+    start_time = ""
 
-    # tag模式的最低热度限制  --------------------------------------------- #
+    # 最低热度限制 仅tag模式有效 --------------------------------------------- #
     min_hot = 0
 
     # 其他设置  ------------------- -------------------------------------- #
