@@ -412,8 +412,8 @@ def infor_formater(favs_info, fav_str, mode, file_path, start_time, min_hot, pri
             for url_info in urls_infos:
                 # raw是没有任何后缀的原图，优先取raw
                 url = url_info.get("raw","")
-                # 有的没有raw，netease之前没写注释不知道是啥，imglf3是不能直接访问的，都取orign删后缀
-                if not url or "netease" in url or "imglf3" in url:
+                # 有的没有raw，netease之前没写注释不知道是啥，都取orign删后缀
+                if not url or "netease" in url :
                     url = url_info["orign"].split("?imageView")[0]
 
                 img_urls.append(url)
@@ -839,7 +839,9 @@ def save_img(imgs_info, file_path, img_save_info, classify_by_tag, prior_tags, a
             if not re_url:
                 print("\n图片 {} 不是lofter站内图 ".format(img_url), end="\t")
             try:
-                img = requests.get(img_url, headers=useragentutil.get_headers()).content
+                tmp_headers = useragentutil.get_headers()
+                tmp_headers["Referer"] = img_info["url"].split("post")[0]
+                img = requests.get(img_url, headers=tmp_headers).content
 
             except:
                 print("保存失败，请尝试手动保存")
@@ -1143,7 +1145,6 @@ if __name__ == '__main__':
 
     # 最早时间指定，仅like2模式有效，格式：yyyy-mm-dd 例：2025-01-01
     start_time = ""
-
     # 最低热度限制 仅tag模式有效 --------------------------------------------- #
     min_hot = 0
 
