@@ -8,5 +8,7 @@ message = """
 # 其他方式对着这个表把你登录方式的key填进去 https://github.com/IshtarTang/lofterSpider/blob/master/笔记图/README/登录方式和login_key对应表.jpg
 login_key = "LOFTER-PHONE-LOGIN-AUTH"
 
-# 授权码 获取方式见 https://github.com/IshtarTang/lofterSpider/blob/master/笔记图/README/如何获取login_auth.png
+# 授权码 获取方式见链接
+# https://github.com/IshtarTang/lofterSpider/blob/master/笔记图/README/如何获取login_auth.png
+# https://github.com/IshtarTang/lofterSpider/blob/master/笔记图/README/如何获取login_auth2.png
 login_auth = ""
