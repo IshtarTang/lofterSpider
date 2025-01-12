@@ -6,6 +6,7 @@ import os
 import random
 from lxml.html import etree
 import l4_author_img
+from l13_like_share_tag import filename_check
 
 
 # 博客发表时间需要从归档页面获取，内容较长，所以单独分出一个方法
@@ -59,7 +60,8 @@ def parse_blogs_info(blogs_urls, login_key, login_auth):
     # 循环len(blogs_info)次，每次解析blogs_info的第一元素，解析完后删除
     for blog_url in blogs_urls:
         print("博客 %s 开始解析" % (blog_url))
-        content = requests.get(blog_url, headers=useragentutil.get_headers()).content.decode("utf-8")
+        content = requests.get(blog_url, headers=useragentutil.get_headers(),
+                               cookies={login_key: login_auth}).content.decode("utf-8")
         author_view_url = blog_url.split("/post")[0] + "/view"
         author_view_parse = etree.HTML(
             requests.get(author_view_url, cookies={login_key: login_auth}).content.decode("utf-8"))
@@ -67,8 +69,10 @@ def parse_blogs_info(blogs_urls, login_key, login_auth):
         author_id = author_view_parse.xpath("//body//iframe[@id='control_frame']/@src")[0].split("blogId=")[1]
         author_ip = re.search(r"http(s)*://(.*).lofter.com/", blog_url).group(2)
         # 获取博客发表时间
-        public_time = get_time(blog_url, author_id, login_key, login_auth)
-
+        try:
+            public_time = get_time(blog_url, author_id, login_key, login_auth)
+        except:
+            public_time = "获取发表时间失败"
         # 不同作者主页会有不同页面结构，所以没有使用xpath而是直接用正则匹配出所有的图片链接
         # imgs_url = re.findall('"(http[s]{0,1}://imglf\d{0,1}.nosdn\d*.[0-9]{0,3}.net.*?)"', content)
         imgs_url = re.findall('"(http[s]{0,1}://imglf\d{0,1}.lf\d*.[0-9]{0,3}.net.*?)"', content)
@@ -101,14 +105,6 @@ def parse_blogs_info(blogs_urls, login_key, login_auth):
             img_info["pic_name"] = author_name_in_filename + "[" + author_ip + "] " + public_time + "(" + str(
                 img_index) + ")." + img_type
             imgs_info.append(img_info)
-            # 这里想遇到png的时候存一张png格式，一张jpg格式。png格式有透明图层有的要在jpg格式下才能看全
-            # 但总之效果不好所以弃用
-            # if img_type == "png":
-            #     img_info_2={}
-            #     img_info_2["img_url"] = img_url
-            #     img_info_2["pic_name"] = author_name + "[" + author_ip + "] " + public_time + "(" + str(
-            #         img_index) + ").jpg"
-            #     imgs_info.append(img_info_2)
 
         blen -= 1
         print("解析完成，获取到图片链接%d，总获取图片数%d，已解析完成%d个链接，剩余%d" % (len(imgs_url), len(imgs_info), blog_num, blen))
@@ -127,7 +123,11 @@ def download_img(imgs_info):
         pic_url = img_info["img_url"]
         img_path = dir_path + "/" + pic_name
         print("获取图片 %s，%s" % (pic_url, pic_name))
-        content = requests.get(pic_url, headers=useragentutil.get_headers()).content
+
+        headers = useragentutil.get_headers()
+        headers["Referer"] = pic_url.split("post")[0]
+
+        content = requests.get(pic_url, headers=headers).content
         with open(img_path, "wb") as op:
             op.write(content)
         num += 1
