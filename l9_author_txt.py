@@ -7,6 +7,7 @@ import requests
 from lxml.html import etree
 import numpy as np
 from collections import Counter
+from urllib.parse import unquote
 
 import useragentutil
 import parse_template
@@ -14,8 +15,6 @@ import l4_author_img
 import l13_like_share_tag
 
 from login_info import login_auth, login_key
-
-import ssl
 
 
 def parse_archive_page(url, header, data, author_url, author_name, query_num, start_time,
@@ -99,7 +98,7 @@ def parse_archive_page(url, header, data, author_url, author_name, query_num, st
     return parsed_blog_info
 
 
-def save_file(blog_infos, author_name, author_ip, get_comm, additional_break):
+def save_file(blog_infos, author_name, author_ip, target_tags, tags_filter_mode, get_comm, additional_break):
     all_file_name = []
     print("开始保存文章内容")
     # 拿一篇出来，测试匹配模板
@@ -129,7 +128,7 @@ def save_file(blog_infos, author_name, author_ip, get_comm, additional_break):
         public_time = blog_info["time"]
         url = blog_info["url"]
         blog_type = blog_info["blog_type"]
-        print("准备保存：{} ，原文连接： {} ".format(print_title, url), end="    ")
+        print("准备保存：{} ，原文连接： {} ".format(print_title, url))
 
         # 文件头
         if blog_info["blog_type"] == "article":
@@ -139,6 +138,14 @@ def save_file(blog_infos, author_name, author_ip, get_comm, additional_break):
         # 正文
         content = requests.get(url, headers=useragentutil.get_headers(),
                                cookies={login_key: login_auth}).content
+
+        blog_tags = re.findall(r'"http[s]{0,1}://.*?.lofter.com/tag/(.*?)"', content.decode("utf-8"))
+        blog_tags = list(map(lambda x: unquote(x, "utf-8").replace("\xa0", " "), blog_tags))
+        if not l4_author_img.tag_filter(blog_tags, target_tags, tags_filter_mode):
+            print("博客{} 不包含指定的tag，跳过".format(title))
+            print()
+            continue
+
         parse = etree.HTML(content)
         join_word = "\n" * additional_break
         article_content = parse_template.get_content(parse, template_id, title, blog_type, join_word)
@@ -272,10 +279,11 @@ def save_file(blog_infos, author_name, author_ip, get_comm, additional_break):
         except:
             print("{}  保存完毕".format(print_title))
         all_file_name.append(file_name)
+        print()
     return all_file_name
 
 
-def run(author_url, get_comm, additional_break, start_time, end_time, merge_titles,
+def run(author_url, target_tags, tags_filter_mode, get_comm, additional_break, start_time, end_time, merge_titles,
         additional_chapter_index):
     author_page_parse = etree.HTML(
         requests.get(author_url + "/view", headers=useragentutil.get_headers(),
@@ -310,7 +318,8 @@ def run(author_url, get_comm, additional_break, start_time, end_time, merge_titl
     for x in [path, arthicle_path]:
         if not os.path.exists(x):
             os.makedirs(x)
-    all_file_name = save_file(blog_infos, author_name, author_ip, get_comm, additional_break)
+    all_file_name = save_file(blog_infos, author_name, author_ip, target_tags, tags_filter_mode, get_comm,
+                              additional_break)
     all_file_name.reverse()
     print("保存完毕")
     if merge_titles:
@@ -470,6 +479,11 @@ if __name__ == '__main__':
 
     # ### 自定义部分 ### #
 
+    # 指定保留有哪些tag的博客，空值为不过滤
+    target_tags = []
+    # tag过滤模式，为in时会保留没有任何tag的博客，为out时不保留。target_tags不为空时该项有效
+    tags_filter_mode = "in"
+
     # 是否爬取评论，1为爬取，0为不爬取
     get_comm = 0
 
@@ -486,5 +500,6 @@ if __name__ == '__main__':
     # 1启动，0关闭，chapter_merge_title为空时无效
     additional_chapter_index = 0
 
-    run(author_url, get_comm, additional_break, start_time, end_time, chapter_merge_title,
+    run(author_url, target_tags, tags_filter_mode, get_comm, additional_break, start_time, end_time,
+        chapter_merge_title,
         additional_chapter_index)
