@@ -145,6 +145,9 @@ def img_fliter(imgs_url, blog_type):
 # tag过滤，如果博客中tag包含目标tag返回True，否则返回flase
 # 如果博客没有任何tag，mode为in时该篇博客会保留，mode为out时则会被过滤掉
 def tag_filter(blog_tags, target_tags, mode):
+    # 如果 target_tags 为空，直接返回 True
+    if not target_tags:
+        return True
     if not blog_tags:
         if mode == "in":
             return True
