@@ -108,7 +108,8 @@ def save_file(blog_infos, author_name, author_ip, target_tags, tags_filter_mode,
     template_id = parse_template.matcher(first_parse)
     print("文字匹配模板为模板{}".format(template_id))
     if template_id == 0:
-        print("文字匹配模板是根据作者主页自动匹配的，模板0是一个匹配度比较广的模板，使用模板0说明没有其他的模板匹配成功，除了文章主体之外可能会爬到一些其他的内容，也有可能出现文章部分内容缺失")
+        print(
+            "文字匹配模板是根据作者主页自动匹配的，模板0是一个匹配度比较广的模板，使用模板0说明没有其他的模板匹配成功，除了文章主体之外可能会爬到一些其他的内容，也有可能出现文章部分内容缺失")
         input1 = input("输入ok确定继续爬取，或输入任意其他文字退出\n")
         if not input1 == "ok":
             print("退出")
@@ -132,7 +133,8 @@ def save_file(blog_infos, author_name, author_ip, target_tags, tags_filter_mode,
 
         # 文件头
         if blog_info["blog_type"] == "article":
-            article_head = "{} by {}[{}]\n发表时间：{}\n原文链接： {}".format(title, author_name, author_ip, public_time, url)
+            article_head = "{} by {}[{}]\n发表时间：{}\n原文链接： {}".format(title, author_name, author_ip, public_time,
+                                                                            url)
         else:
             article_head = "{}\n原文链接： {}".format(title, url)
         # 正文
@@ -225,7 +227,7 @@ def save_file(blog_infos, author_name, author_ip, target_tags, tags_filter_mode,
                         reply_blogname = ""
                     if reply_nickname:
                         comm = "{} {}[{}] 回复 {}[{}]：{}".format(public_time, publisher_nickname, publisher_blogname,
-                                                               reply_nickname, reply_blogname, comm_content)
+                                                                 reply_nickname, reply_blogname, comm_content)
                     else:
                         comm = "{}  {}[{}]：{}".format(public_time, publisher_nickname, publisher_blogname, comm_content)
                     comm_list.append(comm)
@@ -283,8 +285,8 @@ def save_file(blog_infos, author_name, author_ip, target_tags, tags_filter_mode,
     return all_file_name
 
 
-def run(author_url, target_tags, tags_filter_mode, get_comm, additional_break, start_time, end_time, merge_titles,
-        additional_chapter_index):
+def run(author_url, target_tags, tags_filter_mode, get_comm, additional_break, start_time, end_time,
+        merge_titles, auto_chapter_merge_title, additional_chapter_index):
     author_page_parse = etree.HTML(
         requests.get(author_url + "/view", headers=useragentutil.get_headers(),
                      cookies={login_key: login_auth}).content.decode("utf-8"))
@@ -293,7 +295,7 @@ def run(author_url, target_tags, tags_filter_mode, get_comm, additional_break, s
     author_ip = re.search(r"http[s]*://(.*).lofter.com/", author_url).group(1)
 
     try:
-        author_name = author_page_parse.xpath("//title//text()")[0]
+        author_name = author_page_parse.xpath("//title//text()")[0].replace("归档 - ", "")
     except:
         author_name = input("解析作者名时出现异常，请手动输入\n")
     # 归档页链接
@@ -303,7 +305,7 @@ def run(author_url, target_tags, tags_filter_mode, get_comm, additional_break, s
     data = l4_author_img.make_data(author_id, query_num)
     head = l4_author_img.make_head(author_url)
 
-    print("作者名%s,lofter ip %s,主页链接 %s" % (author_name, author_ip, author_url))
+    print("作者名 %s ,lofter ip %s,主页链接 %s" % (author_name, author_ip, author_url))
     path = "./dir/article"
     arthicle_path = "./dir/article/{}".format(author_name)
 
@@ -322,11 +324,11 @@ def run(author_url, target_tags, tags_filter_mode, get_comm, additional_break, s
                               additional_break)
     all_file_name.reverse()
     print("保存完毕")
-    if merge_titles:
-        merge_chapter(merge_titles, arthicle_path, additional_chapter_index, all_file_name)
+    if merge_titles or auto_chapter_merge_title:
+        merge_chapter(merge_titles, auto_chapter_merge_title, arthicle_path, additional_chapter_index, all_file_name)
 
 
-def merge_chapter(merge_titles, file_path, additional_chapter_index, all_file_names):
+def merge_chapter(merge_titles, auto_chapter_merge_title, file_path, additional_chapter_index, all_file_names):
     """
     章节合并版本3
     :param merge_titles: 要合并的标题
@@ -342,7 +344,23 @@ def merge_chapter(merge_titles, file_path, additional_chapter_index, all_file_na
         if not os.path.exists(x):
             os.makedirs(x)
     author_name = all_file_names[0].split("by ")[1].split(".txt")[0]
+    # 自动聚合模式，把标题找出来
+    if auto_chapter_merge_title:
+        print("已开启自动章节合并，检索需合并的文章")
+        title_count = {}
+        for filename in all_file_names:
+            s_filename = filename.split("(")[0].split("（")[0]
+            if title_count.get(s_filename, ""):
+                title_count[s_filename] += 1
+            else:
+                title_count[s_filename] = 1
+        for k, v in title_count.items():
+            if v > 1:
+                if k not in merge_titles:
+                    merge_titles.append(k)
+            print()
 
+    print(f"含以下标题的文章将被合并\n{merge_titles}")
     all_move_filename = set()
     for merge_title in merge_titles:
         chapter_names = []
@@ -469,13 +487,10 @@ def merge_chapter_al(merge_titles, file_path, additional_chapter_index):
 
 
 if __name__ == '__main__':
-    # os.environ['HTTPS_PROXY'] = 'http://127.0.0.1:7900'
-    # os.environ['HTTP_PROXY'] = 'http://127.0.0.1:7900'
+    # 启动程序前需先填写 login_info.py
 
-    # 启动程序前请先填写 login_info.py
-
-    # 作者的主页地址   示例 https://ishtartang.lofter.com/   *最后的'/'不能少
-    author_url = "https://nananago.lofter.com/"
+    # 作者的主页地址   示例 https://loftercreator.lofter.com/   *最后的'/'不能少
+    author_url = ""
 
     # ### 自定义部分 ### #
 
@@ -495,11 +510,16 @@ if __name__ == '__main__':
     end_time = ""
 
     # 章节合并：标题包含指定内容会自动合并，合并后会用你写的标题作为文件名，合并文件里章节的顺序按作者发布顺序，空值为不合并
+    # 例：配制 chapter_merge_title = ["xxx","yyy"]，那么所有标题中包含xxx的文章都会聚合到一个txt文件里，包含yyy的聚合到另一个txt文件里
     chapter_merge_title = []
-    # 额外章节序号: 合并后的文件在每章前加入"第n章"，方便一些阅读软件自动分章（只是单纯的按顺序标号，并不能自动判断原标题是第几章）
-    # 1启动，0关闭，chapter_merge_title为空时无效
+
+    # 自动章节合并，自动识别包含(上)(中)(下)(1)(2)这类的标题并合并
+    # 1启动，0关闭
+    auto_chapter_merge_title = 0
+
+    # 额外章节序号: 合并后的文件在每章前加入"第n章"，方便一些阅读软件自动分章（只是单纯的按顺序标号，并不能自识别原标题是第几章）
+    # 1启动，0关闭，未启动章节合并时无效
     additional_chapter_index = 0
 
     run(author_url, target_tags, tags_filter_mode, get_comm, additional_break, start_time, end_time,
-        chapter_merge_title,
-        additional_chapter_index)
+        chapter_merge_title, auto_chapter_merge_title, additional_chapter_index)
