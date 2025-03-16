@@ -98,7 +98,8 @@ def parse_archive_page(url, header, data, author_url, author_name, query_num, st
     return parsed_blog_info
 
 
-def save_file(blog_infos, author_name, author_ip, target_tags, tags_filter_mode, get_comm, additional_break):
+def save_file(blog_infos, author_name, author_ip, arthicle_path,
+              target_tags, tags_filter_mode, get_comm, additional_break):
     all_file_name = []
     print("开始保存文章内容")
     # 拿一篇出来，测试匹配模板
@@ -116,7 +117,6 @@ def save_file(blog_infos, author_name, author_ip, target_tags, tags_filter_mode,
             exit()
     # 开始保存
 
-    arthicle_path = "./dir/article/{}".format(author_name)
     sesssion = requests.session()
     sesssion.headers = useragentutil.get_headers()
     cookies = sesssion.cookies
@@ -144,7 +144,7 @@ def save_file(blog_infos, author_name, author_ip, target_tags, tags_filter_mode,
         blog_tags = re.findall(r'"http[s]{0,1}://.*?.lofter.com/tag/(.*?)"', content.decode("utf-8"))
         blog_tags = list(map(lambda x: unquote(x, "utf-8").replace("\xa0", " "), blog_tags))
         if not l4_author_img.tag_filter(blog_tags, target_tags, tags_filter_mode):
-            print("博客{} 不包含指定的tag，跳过".format(title))
+            print("博客{} 不包含指定的tag，跳过".format(print_title))
             print()
             continue
 
@@ -307,7 +307,7 @@ def run(author_url, target_tags, tags_filter_mode, get_comm, additional_break, s
 
     print("作者名 %s ,lofter ip %s,主页链接 %s" % (author_name, author_ip, author_url))
     path = "./dir/article"
-    arthicle_path = "./dir/article/{}".format(author_name)
+    arthicle_path = os.path.join(path, re.sub(r'[<>:"/\\|?*]', "_", author_name))
 
     # 博客信息爬取
     blog_infos = parse_archive_page(archive_url, head, data, author_url,
@@ -320,7 +320,8 @@ def run(author_url, target_tags, tags_filter_mode, get_comm, additional_break, s
     for x in [path, arthicle_path]:
         if not os.path.exists(x):
             os.makedirs(x)
-    all_file_name = save_file(blog_infos, author_name, author_ip, target_tags, tags_filter_mode, get_comm,
+    all_file_name = save_file(blog_infos, author_name, author_ip, arthicle_path, target_tags, tags_filter_mode,
+                              get_comm,
                               additional_break)
     all_file_name.reverse()
     print("保存完毕")
@@ -490,7 +491,7 @@ if __name__ == '__main__':
     # 启动程序前需先填写 login_info.py
 
     # 作者的主页地址   示例 https://loftercreator.lofter.com/   *最后的'/'不能少
-    author_url = ""
+    author_url = "https://9031415739.lofter.com/"
 
     # ### 自定义部分 ### #
 
@@ -506,11 +507,11 @@ if __name__ == '__main__':
     additional_break = 0
 
     # 设定爬取哪个时间段的博客，空值为不设定 格式："yyyy-MM-dd" 例："2020-05-01"
-    start_time = ""
+    start_time = "2024-10-01"
     end_time = ""
 
     # 章节合并：标题包含指定内容会自动合并，合并后会用你写的标题作为文件名，合并文件里章节的顺序按作者发布顺序，空值为不合并
-    # 例：配制 chapter_merge_title = ["xxx","yyy"]，那么所有标题中包含xxx的文章都会聚合到一个txt文件里，包含yyy的聚合到另一个txt文件里
+    # 例：配制 chapter_merge_title = ["xxx","yyy"]，那么所有标题中包含xxx的文章都会聚合到xxx.txt文件里，包含yyy的聚合到yyy.txt文件里
     chapter_merge_title = []
 
     # 自动章节合并，自动识别包含(上)(中)(下)(1)(2)这类的标题并合并
